@@ -1,3 +1,7 @@
+# Template for using the 'unittest.py' module for testing python code
+# documentation can be found here: https://docs.python.org/3/library/unittest.html
+# Note that there are many other functions available, see the docs
+
 import unittest
 
 # Replace 'MyClass' with the name of your class
