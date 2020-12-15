@@ -9,6 +9,8 @@ from this method and make sure it FAILS (run the file directly to run the tests)
 6. ???
 7. Profit
 
+NOTE: Run the python file directly to perform the tests, use your class in another file to actually run your code
+
 NOTE: There are many more functions in the 'unittest.py' module, see documentation below
 
 Documentation:
