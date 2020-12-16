@@ -46,7 +46,7 @@ class Transfer:
         self.theta = self.calculate_angle()
 
         self.t = 0
-        self.dt = 1  # seconds
+        self.dt = 100 # seconds
 
         self.v = np.sqrt(EARTH_MU / self.leo)
         self.v_x, self.v_y = self.vectorize(self.v, tang=True)
@@ -54,7 +54,7 @@ class Transfer:
         self.r = np.sqrt(self.x ** 2 + self.y ** 2)
 
         # Orbital constants
-        self.Fg = -EARTH_MU * self.mass / self.r ** 2
+        self.Fg = - EARTH_MU * self.mass / self.r ** 2
 
         # Check this vectorisation
         self.Fg_x, self.Fg_y = self.vectorize(self.Fg)
@@ -65,8 +65,8 @@ class Transfer:
         self.Fc = self.mass * (self.v ** 2) / self.r
         self.Fc_x, self.Fc_y = self.vectorize(self.Fc)
 
-        self.Fx = self.Fg_x + self.Tx
-        self.Fy = self.Fg_y + self.Ty
+        self.Fx = self.Fg_x + self.Tx + self.Fc_x
+        self.Fy = self.Fg_y + self.Ty + self.Fc_y
 
         self.ax = self.Fx / self.mass
         self.ay = self.Fy / self.mass
@@ -78,11 +78,22 @@ class Transfer:
 
     def vectorize(self, F, tang=False):
         if tang:
-            Fx = F * np.cos(np.pi / 2 - self.theta)
-            Fy = F * np.sin(np.pi / 2 - self.theta)
+            if self.x > 0 and self.y > 0:
+                Fx = -F * np.cos(np.pi / 2 - self.theta)
+                Fy = F * np.sin(np.pi / 2 - self.theta)
+            elif self.x < 0 and self.y > 0:
+                Fx = -F * np.sin(np.pi / 2 - self.theta)
+                Fy = -F * np.cos(np.pi / 2 - self.theta)
+            elif self.x < 0 and self.y < 0:
+                Fx = F * np.cos(np.pi / 2 - self.theta)
+                Fy = -F * np.sin(np.pi / 2 - self.theta)
+            else:
+                Fx = F * np.sin(np.pi / 2 - self.theta)
+                Fy = F * np.cos(np.pi / 2 - self.theta)
+
         else:
-            Fx = np.cos(self.theta) * F
-            Fy = np.sin(self.theta) * F
+            Fx = (self.x / self.r) * F
+            Fy = (self.y / self.r) * F
 
         return Fx, Fy
 
@@ -101,7 +112,7 @@ class Transfer:
         self.Fc = self.mass * (self.v ** 2) / self.r
         self.Fc_x, self.Fc_y = self.vectorize(self.Fc)
 
-        self.Fg = EARTH_MU * self.mass / self.r ** 2
+        self.Fg = -EARTH_MU * self.mass / self.r ** 2
         self.Fg_x, self.Fg_y = self.vectorize(self.Fg)
 
         self.Tx, self.Ty = self.vectorize(self.T, tang=True)
@@ -116,6 +127,8 @@ class Transfer:
         self.update_velocity()
         self.update_forces()
 
+        self.t += self.dt
+
         self.ax = self.Fx / self.mass
         self.ay = self.Fy / self.mass
 
@@ -126,14 +139,14 @@ class Transfer:
         """
         path = list()
         # This needs to be worked out, because velocity should go down with higher orbits but we increase thrust?
-        while self.x < self.target:
+        while self.t < 10000:
             path.append((self.x, self.y))
             self.update()
 
         return path
 
 
-def plot_orbits(show_earth=True, filename=None):
+def plot_orbits(transfer, show_earth=True, filename=None):
     data_path = os.path.relpath(f'../data/figures/{filename}', current_path)
 
     fig, ax = plt.subplots()
@@ -143,6 +156,9 @@ def plot_orbits(show_earth=True, filename=None):
 
     leo = plt.Circle((0, 0), h_leo, fill=False, color='r')
     target = plt.Circle((0, 0), h_target, fill=False, color='b')
+
+    coords = [[i for i,j in transfer], [j for i, j in transfer]]
+    ax.plot(coords[0], coords[1], color='black')
 
     patches = [mpatches.Patch(color="red", label="LEO"), mpatches.Patch(color="blue", label="Target")]
 
@@ -162,7 +178,7 @@ def plot_orbits(show_earth=True, filename=None):
 
 
 if __name__ == "__main__":
-    mod_transfer = Transfer(h_leo, h_target, 5, 1, 100e3)
+    mod_transfer = Transfer(h_leo, h_target, 0, 100e3)
     path = mod_transfer.constant_thrust_spiral()
 
-    plot_orbits()
+    plot_orbits(path)
