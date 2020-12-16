@@ -18,9 +18,9 @@ current_path = os.path.dirname(__file__)
 
 # Natural Constants
 EARTH_RADIUS = 6378.140  # km
-GRAVITY_CONST = 6.67430 * 10 ** -11  # m^3 kg^-1 s^-2
+GRAVITY_CONST = 6.67430 * 10 ** -20  # km^3 kg^-1 s^-2
 EARTH_MASS = 5.9722 * 10 ** 24  # kg
-MODULE_MASS = 500000  # kg
+EARTH_MU = GRAVITY_CONST * EARTH_MASS
 
 ### Mission Parameters ####
 # Low Earth Orbit altitude from surface
@@ -30,71 +30,91 @@ h_leo = LEO_ALT + EARTH_RADIUS
 # Target orbit
 h_target = 35800 + EARTH_RADIUS
 
-DELTA_V = 3.44  # km/s
-
-### Design Parameters ###
-vt = False
-
-m_module = 3600
-i_xx = 0
-i_yy = 0
-i_xy = 0
-
 
 class Transfer:
-    def __init__(self, leo, target, thrust, impulse, mass):
+    def __init__(self, leo, target, thrust, mass):
         self.leo = leo
         self.target = target
         self.mass = mass
+        self.i_xx = 0
+        self.i_yy = 0
+        self.i_xy = 0
 
         self.x = self.leo
         self.y = 0
+        # Angle of orbit
+        self.theta = self.calculate_angle()
 
         self.t = 0
-        self.dt = 3600  # seconds
+        self.dt = 1  # seconds
 
-        self.v = np.sqrt(GRAVITY_CONST / self.leo)
-        self.v_x = self.v * np.cos(np.pi / 2 - self.theta)
-        self.v_y = self.v * np.sin(np.pi / 2 - self.theta)
+        self.v = np.sqrt(EARTH_MU / self.leo)
+        self.v_x, self.v_y = self.vectorize(self.v, tang=True)
 
         self.r = np.sqrt(self.x ** 2 + self.y ** 2)
 
         # Orbital constants
-        self.Fg = GRAVITY_CONST * EARTH_MASS * self.mass / self.r ** 2
+        self.Fg = -EARTH_MU * self.mass / self.r ** 2
 
-        # Angle of orbit
-        self.theta = np.arctan2(self.y, self.x) * np.pi / 180
         # Check this vectorisation
-        self.Fg_x = np.cos(self.theta) * self.Fg
-        self.Fg_y = np.sin(self.theta) * self.Fg
+        self.Fg_x, self.Fg_y = self.vectorize(self.Fg)
 
         self.T = thrust
-        self.Tx = self.T * np.cos(np.pi / 2 - self.theta)
-        self.Ty = self.T * np.sin(np.pi / 2 - self.theta)
-
-        self.impulse = impulse
+        self.Tx, self.Ty = self.vectorize(self.T, tang=True)
 
         self.Fc = self.mass * (self.v ** 2) / self.r
+        self.Fc_x, self.Fc_y = self.vectorize(self.Fc)
 
-        self.Fc_x = np.cos(self.theta) * self.Fc
-        self.Fc_y = np.sin(self.theta) * self.Fc
-
-        self.Fx = self.Fg_x + self.Tx + self.Fc_x
-        self.Fy = self.Fg_y + self.Ty + self.Fc_y
+        self.Fx = self.Fg_x + self.Tx
+        self.Fy = self.Fg_y + self.Ty
 
         self.ax = self.Fx / self.mass
         self.ay = self.Fy / self.mass
 
-    def update(self):
-        self.mass = self.mass - self.impulse * self.dt
+    def calculate_angle(self):
+        return np.arctan2(self.y, self.x) * np.pi / 180
 
+
+
+    def vectorize(self, F, tang=False):
+        if tang:
+            Fx = F * np.cos(np.pi / 2 - self.theta)
+            Fy = F * np.sin(np.pi / 2 - self.theta)
+        else:
+            Fx = np.cos(self.theta) * F
+            Fy = np.sin(self.theta) * F
+
+        return Fx, Fy
+
+    def update_pos(self):
+        self.x = self.x + self.dt * self.v_x
+        self.y = self.y + self.dt * self.v_y
+        self.r = np.sqrt(self.x ** 2 + self.y ** 2)
+        self.theta = np.arctan2(self.y, self.x) * np.pi / 180
+
+    def update_velocity(self):
         self.v_x = self.v_x + self.dt * self.ax
         self.v_y = self.v_y + self.dt * self.ay
         self.v = np.sqrt(self.v_x ** 2 + self.v_y ** 2)
 
+    def update_forces(self):
         self.Fc = self.mass * (self.v ** 2) / self.r
-        self.Fc_x = np.cos(self.theta) * self.Fc
-        self.Fc_y = np.sin(self.theta) * self.Fc
+        self.Fc_x, self.Fc_y = self.vectorize(self.Fc)
+
+        self.Fg = EARTH_MU * self.mass / self.r ** 2
+        self.Fg_x, self.Fg_y = self.vectorize(self.Fg)
+
+        self.Tx, self.Ty = self.vectorize(self.T, tang=True)
+
+        self.Fx = self.Fg_x + self.Tx + self.Fc_x
+        self.Fy = self.Fg_y + self.Ty + self.Fc_y
+
+
+    def update(self):
+        # self.mass = self.mass - self.impulse * self.dt
+        self.update_pos()
+        self.update_velocity()
+        self.update_forces()
 
         self.ax = self.Fx / self.mass
         self.ay = self.Fy / self.mass
@@ -105,7 +125,8 @@ class Transfer:
         :return:
         """
         path = list()
-        while self.v > np.sqrt(GRAVITY_CONST / self.target):
+        # This needs to be worked out, because velocity should go down with higher orbits but we increase thrust?
+        while self.x < self.target:
             path.append((self.x, self.y))
             self.update()
 
@@ -140,38 +161,8 @@ def plot_orbits(show_earth=True, filename=None):
     plt.show()
 
 
-#
-# sc_vx = 0
-# sc_vy = np.sqrt(G * me / h1)
-#
-#
-# def gravity(sc_x, sc_y, r):
-#     f = (G * me * m) / r ** 2
-#     fx = - sc_x / r * f
-#     fy = - sc_y / r * f
-#     return fx, fy
-#
-#
-# def thrust(sc_x, sc_y, r):
-#     if sc_x >= 0 and sc_y >= 0:
-#         vtx = -1
-#         vty = 1
-#     elif sc_x < 0 and sc_y >= 0:
-#         vtx = -1
-#         vty = -1
-#     elif sc_x >= 0 and sc_y < 0:
-#         vtx = 1
-#         vty = 1
-#     else:
-#         vtx = 1
-#         vty = -1
-#     if vt:
-#         tx = vtx * abs(sc_y / r * t)
-#         ty = vty * abs(sc_x / r * t)
-#     else:
-#         tx = -vtx * abs(sc_y / r * t)
-#         ty = -vty * abs(sc_x / r * t)
-#     return tx, ty
-
 if __name__ == "__main__":
+    mod_transfer = Transfer(h_leo, h_target, 5, 1, 100e3)
+    path = mod_transfer.constant_thrust_spiral()
+
     plot_orbits()
