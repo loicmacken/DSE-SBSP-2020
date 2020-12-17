@@ -221,6 +221,15 @@ class Module:
 
 
 def plot_orbits(transfer_path, start_alt, target_alt, show_earth=True, filename=None):
+    """
+    Plot the trajectory path of the module from parking orbit to target orbit.
+    :param transfer_path: List of x, y cooardinates of the trajectory path.
+    :param start_alt: Starting altitude including the Earth's radius.
+    :param target_alt: Target altitude including the Earth's radius.
+    :param show_earth: Show the Earth in the plot, boolean.
+    :param filename: Name of plot if you want to save it to data/figures.
+    :return: Trajectory plot.
+    """
     # Find path to data/figures folder
     data_path = os.path.relpath(f'../data/figures/{filename}', current_path)
 
