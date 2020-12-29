@@ -28,9 +28,9 @@ r0 = [r_mag, r_mag * 0.01, 0]
 v0 = [0, v_mag, v_mag * 0.5]  
 
 orbit = OrbitPropagator(r0, v0,  
-                         tspan=3600 * 10,  
-                         dt=10.0,  
-                         cb=data)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tspan=3600 * 10,  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dt=10.0,  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cb=data)  
 
 orbit.propagate_orbit()  
 orbit.plot_3d(show_plot=True, save_plot=False, title="Earth_with_geostationary_orbit")  
