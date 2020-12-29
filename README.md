@@ -13,22 +13,26 @@ An instance of this class requires the initial conditions of the orbit; position
 This class defines three methods: propagate_orbit, diffy_g, plot_3d.
 
 ### Example
-from src.utils import *
+from src.utils import *  
 data_root = str(get_data_root())
+
 // Choose orbital body to get data from
+
 data = import_data('earth')
 
 // First orbiting body
-r_mag = data['radius'] + 35786.0
-v_mag = np.sqrt(data['mu'] / r_mag)
-r0 = [r_mag, r_mag*0.01, 0]
-v0 = [0, v_mag, v_mag*0.5]
 
-orbit = OrbitPropagator(r0, v0,
-                         tspan=3600 * 10,
-                         dt=10.0,
-                         cb=data)
-orbit.propagate_orbit()
-orbit.plot_3d(show_plot=True, save_plot=False, title="Earth with geostationary orbit")
+r_mag = data['radius'] + 35786.0  
+v_mag = np.sqrt(data['mu'] / r_mag)  
+r0 = [r_mag, r_mag * 0.01, 0]  
+v0 = [0, v_mag, v_mag * 0.5]  
 
-""" IMAGE WILL BE ADDED """
+orbit = OrbitPropagator(r0, v0,  
+                         tspan=3600 * 10,  
+                         dt=10.0,  
+                         cb=data)  
+
+orbit.propagate_orbit()  
+orbit.plot_3d(show_plot=True, save_plot=False, title="Earth with geostationary orbit")  
+
+![alt text]("data/figures/'Earth_with_geostationary_orbit.jpg'?raw=true")
