@@ -33,6 +33,6 @@ orbit = OrbitPropagator(r0, v0,
                          cb=data)  
 
 orbit.propagate_orbit()  
-orbit.plot_3d(show_plot=True, save_plot=False, title="Earth with geostationary orbit")  
+orbit.plot_3d(show_plot=True, save_plot=False, title="Earth_with_geostationary_orbit")  
 
-![alt text]("data/figures/'Earth_with_geostationary_orbit.jpg'?raw=true")
+![orbit example](data/figures/Earth_with_geostationary_orbit.jpg)
