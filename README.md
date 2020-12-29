@@ -4,7 +4,7 @@ Code repository for group 2 of the DSE in fall 2020 with the topic of Space Base
 Congratulations! You just wasted your time reading a stupid readme file!
 
 # Data
-All relevant data should be kept here, obviously. When you write a file in another directory you can use the *Utils* function *get_data_root()* to get the path to this directory and access it. You will probably have to convert this path to a string for most import functions.
+All relevant data should be kept here, obviously. When you write a file in another directory you can use the *utils.py* function *get_data_root()* to get the path to this directory and access it. You will probably have to convert this path to a string for most import functions.
 
 # Astropy
 ## Orbital Propagation Class
@@ -25,16 +25,58 @@ data = import_data('earth')
 
 r_mag = data['radius'] + 35786.0  
 v_mag = np.sqrt(data['mu'] / r_mag)  
-r0 = [r_mag, r_mag * 0.01, 0]  
-v0 = [0, v_mag, v_mag * 0.5]  
+r0 = [r_mag, 0, 0]  
+v0 = [0, v_mag, 0]  
 
 orbit = OrbitPropagator(r0, v0,  
-                        tspan=3600 * 10,  
+                        tspan=3600 * 24,  
                         dt=10.0,  
                         cb=data)  
 
 orbit.propagate_orbit()  
 orbit.plot_3d(show_plot=True, save_plot=False, title="Earth_with_geostationary_orbit")  
 ```
+<img src="data/figures/Earth_with_geostationary_orbit.jpg" alt="orbital example" width="500px" height="500px">
 
-![orbit example](data/figures/Earth_with_geostationary_orbit.jpg)
+## Plotting multiple orbits
+You can plot multiple orbits using the *plot_n_orbits* function in *utils.py*.
+
+### Example
+```
+from src.utils import *  
+data_root = str(get_data_root())
+
+# Choose orbital body to get data from
+data = import_data('earth')
+
+# First orbiting body - Random
+r_mag = data['radius'] + 1000.0
+v_mag = np.sqrt(data['mu'] / r_mag)
+r0 = [r_mag, r_mag * 0.01, 0]
+v0 = [0, v_mag, v_mag * 0.5]
+
+# Second orbiting body - ISS
+r_mag = data['radius'] + 408.0
+v_mag = np.sqrt(data['mu'] / r_mag)
+r00 = [r_mag, 0, 0]
+v00 = [0, v_mag, 0]
+
+orbit0 = OrbitPropagator(r0, v0,
+                         tspan=3600 * 10,
+                         dt=10.0,
+                         cb=data)
+orbit1 = OrbitPropagator(r00, v00,
+                         tspan=3600 * 10,
+                         dt=10.0,
+                         cb=data)
+orbit0.propagate_orbit()
+orbit1.propagate_orbit()
+
+plot_n_orbits([orbit0.rs, orbit1.rs],
+              labels=['Random Orbit 1', 'ISS Orbit'],
+              show_plot=True,
+              save_plot=False,
+              title='Randomly initiated orbit with ISS')
+```
+
+<img src="data/figures/Randomly_initiated_orbit_with_ISS.jpg" alt="orbital example" width="500px" height="500px">
