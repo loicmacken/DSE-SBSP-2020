@@ -13,9 +13,11 @@ data_root = str(get_data_root())
 plt.style.use('dark_background')
 
 # Natural Constants
-EARTH_RADIUS = 6378.140  # km
+cb_data = DataHandling().import_centre_body()
+EARTH = cb_data['earth']
+EARTH_RADIUS = EARTH['radius']  # km
 GRAVITY_CONST = 6.67430 * 10 ** -20  # km^3 kg^-1 s^-2
-EARTH_MASS = 5.9722 * 10 ** 24  # kg
+EARTH_MASS = EARTH['mass']  # kg
 EARTH_MU = GRAVITY_CONST * EARTH_MASS
 g0 = 9.81
 
@@ -274,34 +276,60 @@ def plot_orbits(transfer_path, start_alt, target_alt, show_earth=True, filename=
     plt.show()
 
 
-class OrbitPropagator:
+
+class OrbitPropagator(AstroUtils):
     """
     Inspired by Alfonso Gonzalez
     Orbit propagator class which calculates orbit propagation of an orbital body.
     """
 
-    def __init__(self, r0, v0, tspan, dt, cb=None):
+    def __init__(self, state0, tspan, dt, coes=False, deg=True, cb=None, perts=None):
+        """
+        Initialise orbit instance, inheriting astrodynamics tools from AstroUtils.
+        :param state0: Initial state conditions;
+                        if coes=True: [Altitude [km], Eccentricity, Inclination, True Anomaly,
+                        Argument of Perigee, Right Ascension of Ascending Node]
+                        if coes=False: [Initial position [x, y, z], Initial velocity [u, v, w]]
+        :param tspan: Time span
+        :param dt: Time step
+        :param coes: Classical orbital elements or simply r0 and v0
+        :param cb: Centre body data, if None then Earth will be used
+        """
+        if perts is None:
+            perts = self.init_perts()
         if cb is None:
-            cb = import_data('earth')
-        self.r0 = r0
-        self.v0 = v0
+            cb = DataHandling().import_centre_body('earth')
+        if coes:
+            self.r0, self.v0 = self.coes2rv(state0, deg=deg, mu=cb['mu'])
+        else:
+            self.r0 = state0[:3]
+            self.v0 = state0[3:]
 
         self.tspan = tspan
         self.dt = dt
         self.n_steps = int(np.ceil(self.tspan / self.dt))
 
+        # Initialise arrays, memory allocation
         self.ys = np.zeros((self.n_steps, 6))
         self.ts = np.zeros((self.n_steps, 1))
+        self.coes = np.zeros((self.n_steps, 6))
+
         # Initial conditions
-        self.y0 = self.r0 + self.v0
+        self.y0 = self.r0.tolist() + self.v0.tolist()
         self.ys[0] = self.y0
         self.ts[0] = 0
         self.step = 1
-        self.rs = None
-        self.vs = None
+        self.rs = self.ys[:, :3]
+        self.vs = self.ys[:, 3:]
         self.cb = cb
 
+        self.perts = perts
+
     def propagate_orbit(self):
+        """
+        Use scipy ode solver to propogate orbit through integration of position and velocity over time.
+        :return: Updates orbit instance's r values over time steps
+        """
         # Initiate solver
         solver = ode(self.diffy_q)
         solver.set_integrator('lsoda')
@@ -318,6 +346,12 @@ class OrbitPropagator:
         return
 
     def diffy_q(self, t, y):
+        """
+        Differential equation defining the orbit propagation.
+        :param t: Current time (used in ode solver)
+        :param y: Current state space
+        :return: New velocities and accelerations
+        """
         # Unpack state space
         rx, ry, rz, vx, vy, vz = y
         r = np.array([rx, ry, rz])
@@ -326,108 +360,201 @@ class OrbitPropagator:
         norm_r = np.linalg.norm(r)
 
         # Two body acceleration
-        ax, ay, az = -r * self.cb['mu'] / norm_r ** 3
+        a = -r * self.cb['mu'] / norm_r ** 3
 
-        return [vx, vy, vz, ax, ay, az]
+        if self.perts['J2']:
+            z2 = r[2] ** 2
+            r2 = norm_r ** 2
+            tx = r[0] / norm_r * (5 * z2 / r2 - 1)
+            ty = r[1] / norm_r * (5 * z2 / r2 - 1)
+            tz = r[2] / norm_r * (5 * z2 / r2 - 3)
 
-    def plot_3d(self, show_plot=False, save_plot=False, title='Test Title'):
-        fig = plt.figure(figsize=(14, 6))
-        ax = fig.add_subplot(111, projection='3d')
+            a_j2 = 1.5 * self.cb['J2'] * self.cb['mu'] * self.cb['radius'] ** 2 / norm_r ** 4 * np.array([tx, ty, tz])
 
-        # Plot trajectory
-        ax.plot(self.rs[:, 0], self.rs[:, 1], self.rs[:, 2], 'b', label='Trajectory')
-        ax.plot([self.rs[0, 0]], [self.rs[0, 1]], [self.rs[0, 2]], 'bo', label='Initial Position')
+            a += a_j2
 
-        # Plot central body
-        _u, _v = np.mgrid[0:2 * np.pi:20j, 0:np.pi:10j]
-        _x = self.cb['radius'] * np.cos(_u) * np.sin(_v)
-        _y = self.cb['radius'] * np.sin(_u) * np.sin(_v)
-        _z = self.cb['radius'] * np.cos(_v)
-        ax.plot_surface(_x, _y, _z, cmap='Greens')
+        return [vx, vy, vz, a[0], a[1], a[2]]
 
-        # Plot the x,y,z vectors
-        l = self.cb['radius'] * 2
-        x, y, z = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-        u, v, w = [[l, 0, 0], [0, l, 0], [0, 0, l]]
+    def calculate_coes(self):
+        """
+        :return: Updates COEs array using rv2coes util function with existing rs and vs from propagation.
+        """
+        print('Calculating Classical Orbital Elements (COEs)...')
 
-        ax.quiver(x, y, z, u, v, w, color='r')
+        for n in range(self.n_steps):
+            self.coes[n, :] = self.rv2coes(self.rs[n, :], self.vs[n, :], mu=self.cb['mu'], deg=True)
 
-        max_val = np.max(np.abs(self.rs))
+    def plot_coes(self, hours=False, days=False, show_plot=False, save_plot=False, title='COEs'):
+        """
+        Order of COEs: a, e_norm, i, ta, aop, raan
+        :param hours: Show time elapsed in hours
+        :param days: Show time elapsed in days
+        :param show_plot: Show plot
+        :param save_plot: Save plot
+        :param title: Plot title
+        :return:
+        """
+        print("Plotting Classical Orbital Elements (COEs)...")
+        # Create figure and axes
+        fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(16, 8))
+        # Figure title
+        fig.suptitle(title, fontsize=20)
 
-        ax.set_xlim([-max_val, max_val])
-        ax.set_ylim([-max_val, max_val])
-        ax.set_zlim([-max_val, max_val])
+        # x axis
+        if hours:
+            ts = self.ts / 3600.0
+            xlabel = 'Time Elapsed (hours)'
+        elif days:
+            ts = self.ts / 3600.0 / 24.0
+            xlabel = 'Time Elapsed (days)'
+        else:
+            ts = self.ts
+            xlabel = 'Time Elapsed (seconds)'
 
-        ax.set_xlabel(['X (km)'])
-        ax.set_ylabel(['Y (km)'])
-        ax.set_zlabel(['Z (km)'])
+        # Plot true anomaly
+        axs[0, 0].plot(ts, self.coes[:, 3])
+        axs[0, 0].set_title('True Anomaly vs Time')
+        axs[0, 0].grid(True)
+        axs[0, 0].set_ylabel('Angle (degrees)')
+        axs[0, 0].set_xlabel(xlabel)
 
-        ax.set_aspect('auto')
+        # Plot semi-major axis
+        axs[1, 0].plot(ts, self.coes[:, 0])
+        axs[1, 0].set_title('Semi-Major Axis vs Time')
+        axs[1, 0].grid(True)
+        axs[1, 0].set_ylabel('Semi-Major Axis (km)')
+        axs[1, 0].set_xlabel(xlabel)
 
-        ax.set_title(title)
+        # Plot eccentricity
+        axs[0, 1].plot(ts, self.coes[:, 1])
+        axs[0, 1].set_title('Eccentricity vs Time')
+        axs[0, 1].grid(True)
 
-        plt.legend()
+        # Plot argument of periapsis
+        axs[0, 2].plot(ts, self.coes[:, 4])
+        axs[0, 2].set_title('Argument of Periapsis vs Time')
+        axs[0, 2].grid(True)
+        axs[0, 2].set_ylabel('Angle (degrees)')
+        axs[0, 2].set_xlabel(xlabel)
+
+        # Plot inclination
+        axs[1, 1].plot(ts, self.coes[:, 2])
+        axs[1, 1].set_title('Inclination vs Time')
+        axs[1, 1].grid(True)
+        axs[1, 1].set_ylabel('Angle (degrees)')
+        axs[1, 1].set_xlabel(xlabel)
+
+        # Plot RAAN
+        axs[1, 2].plot(ts, self.coes[:, 5])
+        axs[1, 2].set_title('RAAN vs Time')
+        axs[1, 2].grid(True)
+        axs[1, 2].set_ylabel('Angle (degrees)')
+        axs[1, 2].set_xlabel(xlabel)
 
         if show_plot:
             plt.show()
-        else:
-            plt.cla()
-            plt.clf()
-            plt.close()
-
         if save_plot:
-            save_path = data_root + '/figures'
-            plt.savefig(save_path + f"/{self.cb['name']}_init_{round(self.rs[0][0])}_fin_{round(self.rs[-1][0])}.png",
-                        dpi=300)
-        return
+            DataHandling().save_figure(fig, title.replace(' ', '_'))
+
+    # def plot_3d(self, show_plot=False, save_plot=False, title='Test Title'):
+    #     fig = plt.figure(figsize=(10, 10))
+    #     ax = fig.add_subplot(111, projection='3d')
+    #
+    #     # Plot trajectory
+    #     ax.plot(self.rs[:, 0], self.rs[:, 1], self.rs[:, 2], 'b', label='Trajectory')
+    #     ax.plot([self.rs[0, 0]], [self.rs[0, 1]], [self.rs[0, 2]], 'bo', label='Initial Position')
+    #
+    #     # Plot central body
+    #     _u, _v = np.mgrid[0:2 * np.pi:20j, 0:np.pi:10j]
+    #     _x = self.cb['radius'] * np.cos(_u) * np.sin(_v)
+    #     _y = self.cb['radius'] * np.sin(_u) * np.sin(_v)
+    #     _z = self.cb['radius'] * np.cos(_v)
+    #     ax.plot_surface(_x, _y, _z, cmap='Greens')
+    #
+    #     # Plot the x,y,z vectors
+    #     l = self.cb['radius'] * 2
+    #     x, y, z = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+    #     u, v, w = [[l, 0, 0], [0, l, 0], [0, 0, l]]
+    #
+    #     ax.quiver(x, y, z, u, v, w, color='r')
+    #
+    #     max_val = np.max(np.abs(self.rs))
+    #
+    #     ax.set_xlim([-max_val, max_val])
+    #     ax.set_ylim([-max_val, max_val])
+    #     ax.set_zlim([-max_val, max_val])
+    #
+    #     ax.set_xlabel('X (km)')
+    #     ax.set_ylabel('Y (km)')
+    #     ax.set_zlabel('Z (km)')
+    #
+    #     ax.set_aspect('auto')
+    #
+    #     ax.set_title(title)
+    #
+    #     plt.legend()
+    #
+    #     if show_plot:
+    #         plt.show()
+    #     else:
+    #         plt.cla()
+    #         plt.clf()
+    #         plt.close()
+    #
+    #     if save_plot:
+    #         save_path = data_root + '/figures'
+    #         fig.savefig(save_path + f"/{title}.jpg")
+    #     return
 
 
 if __name__ == "__main__":
     # Choose orbital body to get data from
-    data = import_data('earth')
+    data = cb_data['earth']
 
-    # First orbiting body
-    r_mag = data['radius'] + 1000.0
-    v_mag = np.sqrt(data['mu'] / r_mag)
-    r0 = [r_mag, r_mag*0.01, 0]
-    v0 = [0, v_mag, v_mag*0.5]
+    # ISS
+    # Altitude, Eccentricity, Inclination, True anomaly, Argument of Perigee, Right Acsension of Ascending Node
 
-    # Second orbiting body
-    r_mag = data['radius'] + 408.0
-    v_mag = np.sqrt(data['mu'] / r_mag)
-    r00 = [r_mag, 0, 0]
-    v00 = [0, v_mag, 0]
+    c0 = [data['radius'] + 414.0, 0.0000867, 51.6417, 0.0, 165.1519, 95.4907]
 
-    # Third orbiting body
-    r_mag = data['radius'] + 1800
-    v_mag = np.sqrt(data['mu'] / r_mag)
-    r000 = [-r_mag, -r_mag*0.01, 0]
-    v000 = [0, -v_mag, -v_mag*0.3]
+    # Geostationary
+    c1 = [data['radius'] + 35786, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-    orbit0 = OrbitPropagator(r0, v0,
-                             tspan=3600 * 10,
-                             dt=10.0,
-                             cb=data)
-    orbit1 = OrbitPropagator(r00, v00,
-                             tspan=3600 * 10,
-                             dt=10.0,
-                             cb=data)
-    orbit2 = OrbitPropagator(r000, v000,
-                             tspan=3600 * 10,
-                             dt=10.0,
-                             cb=data)
+    # Random
+    c2 = [data['radius'] + 1750, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-    orbit0.propagate_orbit()
-    orbit1.propagate_orbit()
-    orbit2.propagate_orbit()
+    tspan = 3600 * 24 * 2
 
-    plot_n_orbits([orbit0.rs, orbit1.rs, orbit2.rs],
-                  labels=['Random Orbit 1', 'ISS Orbit', 'Random Orbit 2'],
-                  show_plot=True,
-                  save_plot=False,
-                  title='Randomly initiated orbit with ISS')
+    # Creat instances
+    o0 = OrbitPropagator(c0,
+                         tspan=tspan,
+                         dt=10.0,
+                         coes=True,
+                         cb=data,
+                         perts=AstroUtils.init_perts(J2=True))
+    o1 = OrbitPropagator(c1,
+                         tspan=tspan,
+                         dt=10.0,
+                         coes=True,
+                         cb=data,
+                         perts=AstroUtils.init_perts(J2=True))
+    o2 = OrbitPropagator(c2,
+                         tspan=tspan,
+                         dt=10.0,
+                         coes=True,
+                         cb=data,
+                         perts=AstroUtils.init_perts(J2=True))
+    o0.propagate_orbit()
+    o1.propagate_orbit()
+    o2.propagate_orbit()
 
-    # orbit0.plot_3d(show_plot=True, save_plot=True, title="Earth with geostationary orbit")
+    o2.calculate_coes()
+    # o2.plot_coes(hours=True, show_plot=False, save_plot=False)
+
+    AstroUtils.plot_n_orbits([o0.rs, o1.rs, o2.rs],
+                             labels=['ISS Orbit', 'Geostationary Orbit', 'IKAROS orbit'],
+                             show_plot=True,
+                             save_plot=True,
+                             title=f'Orbit comparisons with J2 perturbation - {round(o0.ts[-1][0] / 3600)} hrs')
 
     """
 
