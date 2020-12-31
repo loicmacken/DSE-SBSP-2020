@@ -22,6 +22,17 @@ EARTH_MU = GRAVITY_CONST * EARTH_MASS
 g0 = 9.81
 
 
+class Error(Exception):
+    pass
+
+
+class CrashError(Error):
+
+    def __init__(self, expression, message):
+        self.expression = expression
+        self.message = message
+
+
 class Module:
     def __init__(self, start, thrust, isp, mass, Ixx, Iyy, Ixy=0, dt=1):
         """
@@ -276,7 +287,6 @@ def plot_orbits(transfer_path, start_alt, target_alt, show_earth=True, filename=
     plt.show()
 
 
-
 class OrbitPropagator(AstroUtils):
     """
     Inspired by Alfonso Gonzalez
@@ -300,7 +310,7 @@ class OrbitPropagator(AstroUtils):
         if cb is None:
             cb = DataHandling().import_centre_body('earth')
         if coes:
-            self.r0, self.v0 = self.coes2rv(state0, deg=deg, mu=cb['mu'])
+            self.r0, self.v0 = self.coes2rv(state0, deg=deg, cb=cb)
         else:
             self.r0 = state0[:3]
             self.v0 = state0[3:]
@@ -340,9 +350,14 @@ class OrbitPropagator(AstroUtils):
             solver.integrate(solver.t + self.dt)
             self.ts[self.step] = solver.t
             self.ys[self.step] = solver.y
+            r = self.ys[self.step][:, :3]
+            r_norm = np.linalg.norm(r)
+            if r_norm <= self.cb['radius']:
+                raise CrashError(f"{r_norm} <= {self.cb['radius']}", "Object crashed during orbit propagation.")
             self.step += 1
         self.rs = self.ys[:, :3]
         self.vs = self.ys[:, 3:]
+
         return
 
     def diffy_q(self, t, y):
@@ -547,6 +562,8 @@ if __name__ == "__main__":
     o1.propagate_orbit()
     o2.propagate_orbit()
 
+    print(np.shape(o0.rs))
+
     o2.calculate_coes()
     # o2.plot_coes(hours=True, show_plot=False, save_plot=False)
 
@@ -554,7 +571,7 @@ if __name__ == "__main__":
                              labels=['ISS Orbit', 'Geostationary Orbit', 'IKAROS orbit'],
                              show_plot=True,
                              save_plot=True,
-                             title=f'Orbit comparisons with J2 perturbation - {round(o0.ts[-1][0] / 3600)} hrs')
+                             title=f'Orbit comparisons with J2 perturbation\n{round(o0.ts[-1][0] / 3600)} hrs')
 
     """
 
