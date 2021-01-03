@@ -1,5 +1,6 @@
 from pathlib import Path
 import numpy as np
+from numpy import ndarray
 import math as m
 import matplotlib.pyplot as plt
 import csv
@@ -62,6 +63,7 @@ class DataHandling:
         :param path: Directory to save to inside self.data_path, use path='' to save in root data directory.
         :return:
         """
+        filename = filename.split("\n")[0]
         if path is None:
             save_path = self.data_path + f'/figures/{filename}.{filetype}'
         else:
@@ -86,6 +88,8 @@ class AstroUtils:
         :param deg: Value in degrees
         :return: Value in radians
         """
+        if deg < 0.0 or deg > 360.0:
+            raise ValueError("All degree values should be between 0 and 360.")
         return deg * np.pi / 180.0
 
     @staticmethod
@@ -95,16 +99,39 @@ class AstroUtils:
         :param rad: Value in radians
         :return: Value in degrees
         """
+        if rad < 0.0 or rad > 2 * np.pi:
+            raise ValueError("All radian values should be between 0 and 2*pi.")
         return rad * 180.0 / np.pi
 
     @staticmethod
-    def init_perts(J2=False, aero=False, moon_grav=False, solar_grav=False):
+    def init_perts(J2=False, aero=False, tb=None, thrust=0, isp=0):
+        if tb is None:
+            tb = []
         return {
             'J2': J2,
             'aero': aero,
-            'moon_grav': moon_grav,
-            'solar_grav': solar_grav
+            'third_bodies': tb,
+            'thrust': thrust,
+            'isp': isp
         }
+
+    @staticmethod
+    def make_sat(state: list, name: str, mass: float, perts: dict, target=None):
+        """
+        Create dictionary defining satellite object.
+        :param state: list of either initial COEs or r0, v0
+        :param name: name of object, used in labeling
+        :param target: target orbit (if any)
+        :param mass: initial mass
+        :param perts: perturbation conditions
+        :return: dictionary object containing satellite info
+        """
+        return {'state': np.array(state),
+                'name': name,
+                'target': target,
+                'mass': mass,
+                'perts': perts
+                }
 
     @staticmethod
     def plot_n_orbits(rs: list, labels: list, cb=None, show_plot=False, save_plot=False, title='Test Title'):
@@ -118,6 +145,11 @@ class AstroUtils:
         :param title: Title of the plot
         :return:
         """
+
+        for i in rs:
+            if np.shape(i)[1] != 3:
+                raise AttributeError("r values are not three dimensional.")
+
         if cb is None:
             cb = DataHandling().import_centre_body('earth')
         fig = plt.figure(figsize=(10, 10))
@@ -127,7 +159,7 @@ class AstroUtils:
         n = 0
         for r in rs:
             ax.plot(r[:, 0], r[:, 1], r[:, 2], label=labels[n])
-            ax.plot([r[0, 0]], [r[0, 1]], [r[0, 2]], 'bo')
+            ax.plot([r[0, 0]], [r[0, 1]], [r[0, 2]], 'o', label=labels[n].split(' ')[0] + ' Initial Position')
             n += 1
 
         # Plot central body
@@ -144,7 +176,9 @@ class AstroUtils:
 
         ax.quiver(x, y, z, u, v, w, color='r')
 
-        max_val = np.max(np.abs(rs))
+        max_val = 0
+        for r in rs:
+            max_val = max(max_val, np.max(np.abs(r)))
 
         ax.set_xlim([-max_val, max_val])
         ax.set_ylim([-max_val, max_val])
@@ -164,24 +198,26 @@ class AstroUtils:
             plt.show()
         if save_plot:
             DataHandling().save_figure(fig, title.replace(' ', '_'))
-            # save_path = str(get_data_root()) + '/figures'
-            # fig.savefig(save_path + f"/{title}.jpg")
         return
 
-    def coes2rv(self, state: list, deg=False, mu=None):
+    def coes2rv(self, state: list, deg=False, cb=None):
         """
         Classical Orbital Elements conversion to r and v vectors.
         :param state: Altitude [km], Eccentricity, Inclination, True Anomaly, Argument of Perigee,
         Right Ascension of Ascending Node
         :param deg: Input in degrees or radians
-        :param mu: Standard gravitational parameter in km^3 s^-2
+        :param cb: Central body data
         :return: r and v in inertial frame
         """
-        if mu is None:
+        if cb is None:
             cb = DataHandling().import_centre_body('Earth')
+            mu = cb['mu']
+        else:
             mu = cb['mu']
 
         a, e, i, ta, aop, raan = state
+
+        # Ensure all angles are in radians
         if deg:
             i = self.d2r(i)
             ta = self.d2r(ta)
@@ -205,7 +241,7 @@ class AstroUtils:
 
         return r, v
 
-    def rv2coes(self, r, v, mu=None, deg=False, print_results=False):
+    def rv2coes(self, r, v, mu=None, deg=True, print_results=False):
         if mu is None:
             cb = DataHandling().import_centre_body('Earth')
             mu = cb['mu']
@@ -220,8 +256,8 @@ class AstroUtils:
         i = m.acos(h[2] / h_norm)
 
         # Eccentricity vector
-        e = ((np.linalg.norm(v) ** 2 - mu / r_norm) * r - np.dot(r, v) * v) / mu
-        # e = (np.cross(v, h) / mu) - (r / r_norm)
+        # e = ((np.linalg.norm(v) ** 2 - mu / r_norm) * r - np.dot(r, v) * v) / mu
+        e = (np.cross(v, h) / mu) - (r / r_norm)
         e_norm = np.linalg.norm(e)
 
         # Node line
@@ -229,17 +265,17 @@ class AstroUtils:
         N_norm = np.linalg.norm(N)
 
         # RAAN
-        raan = m.acos(N[0] / N_norm)
+        raan = m.acos(N[0] / N_norm) if not np.nan else 0.0
         if N[1] < 0:
             raan = 2 * np.pi - raan
 
         # Argument of Perigee
-        aop = m.acos(np.dot(N, e) / N_norm / e_norm)
+        aop = m.acos(np.dot(N, e) / N_norm / e_norm) if not np.nan else 0.0
         if e[2] < 0:
             aop = 2 * np.pi - aop
 
         # True anomaly
-        ta = m.acos(round(np.dot(e, r) / e_norm / r_norm, 7))
+        ta = m.acos(round(np.dot(e, r) / e_norm / r_norm, 10))
         if np.dot(r, v) < 0:
             ta = 2 * np.pi - ta
 
@@ -264,7 +300,7 @@ class AstroUtils:
     @staticmethod
     def eci2perif(raan, aop, i):
         """
-        Convert Earth-centred Inertial frame to Perifocal frame of reference
+        Convert Earth-centred Inertial to Perifocal rotation matrix. All angles in radians.
         :param raan: Right Ascension of Ascending Node
         :param aop: Argument of Perigee
         :param i: Inclination
@@ -313,6 +349,30 @@ class AstroUtils:
             return 2 * m.atan(m.sqrt((1 - e) / (1 + e)) * m.tan(ta / 2.0))
         else:
             print('Invalid method for eccentric anomaly.')
+
+    @staticmethod
+    def get_orbit_time(ts: ndarray, units=None):
+        """
+
+        :param ts: Orbit Propagation times as (nsteps, 1) numpy array
+        :param units: [s, hrs, days], default is hrs
+        :return: time in given units
+        """
+        if units is None:
+            units = [0, 1, 0]
+        if sum(units) > 1:
+            raise ValueError("Only one unit can be given")
+
+        if units == [1, 0, 0]:
+            t = round(ts[-1][0], 5)
+        elif units == [0, 1, 0]:
+            t = round(ts[-1][0] / 3600.0, 4)
+        elif units == [0, 0, 1]:
+            t = round(ts[-1][0] / 3600.0 / 24.0, 3)
+        else:
+            raise ValueError("Units must be one hot encoded.")
+
+        return t
 
 
 if __name__ == "__main__":
