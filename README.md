@@ -33,6 +33,7 @@ The *calculate_coes* function takes in the rs and vs of the orbit propagator cla
 ```
 from src.utils import *
 from src.utils import AstroUtils as au
+from src.astropy import OrbitPropagator
 cb_data = DataHandling().import_centre_body()
 
 # Choose orbital body to get data from
@@ -73,6 +74,7 @@ You can plot multiple orbits using the *plot_n_orbits* function in *utils.py*.
 ```
 from src.utils import *  
 from src.utils import AstroUtils as au  
+from src.astropy import OrbitPropagator  
 cb_data = DataHandling().import_centre_body()
 
 # Choose orbital body to get data from
