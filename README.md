@@ -72,6 +72,7 @@ You can plot multiple orbits using the *plot_n_orbits* function in *utils.py*.
 ### Example
 ```
 from src.utils import *  
+from src.utils import AstroUtils as au  
 cb_data = DataHandling().import_centre_body()
 
 # Choose orbital body to get data from
