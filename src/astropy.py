@@ -262,7 +262,7 @@ class OrbitPropagator(AstroUtils):
 
         # Plot trajectory
         ax.plot(self.rs[:, 0], self.rs[:, 1], self.rs[:, 2], 'b', label='Trajectory')
-        ax.plot([self.rs[0, 0]], [self.rs[0, 1]], [self.rs[0, 2]], 'bo', label='Initial Position')
+        ax.plot([self.rs[0, 0]], [self.rs[0, 1]], [self.rs[0, 2]], 'wo', label='Initial Position')
 
         # Plot central body
         _u, _v = np.mgrid[0:2 * np.pi:20j, 0:np.pi:10j]
@@ -302,8 +302,7 @@ class OrbitPropagator(AstroUtils):
             plt.close()
 
         if save_plot:
-            save_path = data_root + '/figures'
-            fig.savefig(save_path + f"/{title}.jpg")
+            DataHandling().save_figure(fig, title.replace(' ', '_'))
         return
 
 
@@ -318,7 +317,7 @@ if __name__ == "__main__":
                          'IKAROS',
                          10000.0,
                          au.init_perts(J2=True, isp=5000, thrust=5.0),
-                         35000.0, )
+                         35786.0, )
 
     iss = au.make_sat([data['radius'] + 418, 0.0000933, 51.6444, 0.0, 193.3222, 77.2969],
                       'ISS',
@@ -344,7 +343,7 @@ if __name__ == "__main__":
                               perts=ikaros['perts'])
 
     iss0 = OrbitPropagator(state0=iss['state'],
-                           tspan=3600 * 24,
+                           tspan=3600 * 24 * 2.0,
                            dt=10.0,
                            target=iss['target'],
                            coes=True,
@@ -367,14 +366,14 @@ if __name__ == "__main__":
 
     ikaros0.plot_3d(show_plot=False)
 
-    iss0.plot_3d(show_plot=False)
+    iss0.plot_3d(show_plot=False, title="ISS Orbit with J2 Perturbation")
 
     au.plot_n_orbits([ikaros0.rs, iss0.rs],
                      labels=[
                          f"{ikaros['name']} Trajectory {au.get_orbit_time(ikaros0.ts, [0, 0, 1])} days",
                          f"{iss['name']} Trajectory {au.get_orbit_time(iss0.ts)} hrs"],
                      show_plot=True,
-                     save_plot=True,
+                     save_plot=False,
                      title=f"{ikaros['name']} Transfer and {iss['name']} trajectory"
                            f"\nLongest Trajectory {max(au.get_orbit_time(ikaros0.ts, [0, 0, 1]), au.get_orbit_time(iss0.ts, [0, 0, 1]))} days")
 
