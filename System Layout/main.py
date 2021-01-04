@@ -133,6 +133,7 @@ struct4 = truss(-(r_queen + o_r), -r_queen, 0, 0)
 mass = min(TOTAL_MASS)
 
 print("Queen depth: ", d_best // 1, "m")
+print("Worker depth: ", d_worker // 1, "m")
 print("Worker offset: ", worker_offset // 1, "m")
 print("Sting offset: ", o_s // 1, "m")
 print("Sting radius: ", r_s // 1, "m")
