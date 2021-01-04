@@ -1,5 +1,6 @@
 from matplotlib import pyplot as plt
 from parabola import *
+import numpy as np
 
 """
 NOTES
