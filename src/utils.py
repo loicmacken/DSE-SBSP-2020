@@ -3,7 +3,6 @@ import numpy as np
 from numpy import ndarray
 import math as m
 import matplotlib.pyplot as plt
-from celluloid import Camera
 import csv
 import os
 import imageio
@@ -78,27 +77,39 @@ class DataHandling:
         return
 
     def make_anim(self, rs: list, ts: list, labels: list, cb=None, title='Orbit Animation'):
+        """
+        This function is pretty gross I know, but it makes a nice animation stored in data/animations.
+        :param rs: List of lists of r values for given orbits
+        :param ts: List of lists of time values for given orbits
+        :param labels: Plot legend labels for given orbits, len(labels) == len(rs) == len(ts)
+        :param cb: Central body data, if None then Earth is used
+        :param title: Title of animation plot
+        :return: Saves file as anim.gif, can change this later but files are quite large so only one is needed right now
+        """
+        # Load in central body data
         if cb is None:
             cb = DataHandling().import_centre_body('earth')
-        fig = plt.figure(figsize=(10, 10))
-        camera = Camera(fig)
-        ax = fig.add_subplot(111, projection='3d')
-        # rs = []
-        # ts = []
-        # for orbit in orbits:
-        #     rs.append(orbit.rs)
-        #     ts.append(orbit.ts)
 
+        # Setup 3D figure
+        fig = plt.figure(figsize=(10, 10))
+        ax = fig.add_subplot(111, projection='3d')
+
+        # Take whichever time list is longest
         ts = max(ts, key=len)
 
+        # Find maximum r value for setting the plot limits
         max_val = 0
         for r in rs:
             max_val = max(max_val, np.max(np.abs(r)))
 
+        # Find maximum number of necessary steps (which is the length of the longest r list)
         n_steps = max(map(len, rs))
+        # Number of frames desired for gif
         frames = 120
+        # Step size needed to acheive this number of frames
         step_size = m.ceil(n_steps / frames)
         step = 0
+        # Frame
         f = 0
         n = 0
 
@@ -423,6 +434,46 @@ class AstroUtils:
             return 2 * m.atan(m.sqrt((1 - e) / (1 + e)) * m.tan(ta / 2.0))
         else:
             print('Invalid method for eccentric anomaly.')
+
+    @staticmethod
+    def hohmann_calculation(r0, r1, coes0=None, altitude=False, cb=None, n_burns=2):
+        if cb is None:
+            cb = DataHandling().import_centre_body('earth')
+
+        rs = [r0]
+        for burn in range(n_burns):
+            rs.append(((r1 - r0) / n_burns) + rs[burn])
+
+        if altitude:
+            r0 += cb['radius']
+            r1 += cb['radius']
+
+        if coes0 is None:
+            coes0 = [r0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+        transfers = {}
+        n = 1
+        for i in range(len(rs) - 1):
+            a_transfer = (rs[i] + rs[i+1]) / 2.0
+
+            v_circ_init = m.sqrt(cb['mu'] / rs[i])
+            v_circ_final = m.sqrt(cb['mu'] / rs[i+1])
+
+            v0_transfer = m.sqrt(cb['mu'] * (2 / rs[i] - 1 / a_transfer))
+            v1_transfer = m.sqrt(cb['mu'] * (2 / rs[i+1] - 1 / a_transfer))
+
+            t_transfer = m.pi * m.sqrt(a_transfer ** 3 / cb['mu'])
+
+            delta_vs = [v0_transfer - v_circ_init, v_circ_final - v1_transfer]
+
+            e_transfer = 1 - rs[i] / a_transfer
+
+            transfers[f'{n}'] = {'delta_vs': delta_vs,
+                                 't_transfer': t_transfer,
+                                 'coes': [a_transfer, e_transfer, coes0[2], 0.0, coes0[4], coes0[5]]}
+            n += 1
+
+        return transfers
 
     @staticmethod
     def get_orbit_time(ts: ndarray, units=None):
