@@ -2,8 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../DSE-SBSP-2020/.idea/DSE-SBSP-2020.iml" filepath="$PROJECT_DIR$/../DSE-SBSP-2020/.idea/DSE-SBSP-2020.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/parabola.iml" filepath="$PROJECT_DIR$/.idea/parabola.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/DSE-SBSP-2020.iml" filepath="$PROJECT_DIR$/.idea/DSE-SBSP-2020.iml" />
     </modules>
   </component>
 </project>
