@@ -30,6 +30,7 @@ all much like Chris's drawing
 
 Note:
 The code is kinda inefficient and takes around 20 secs, so be patient
+alternetively you can change the number of steps in the iterations
 """
 
 # Mass estimates [kg] (as in order of magnitude is in the correct range)
@@ -132,13 +133,18 @@ struct4 = truss(-(r_queen + o_r), -r_queen, 0, 0)
 
 mass = min(TOTAL_MASS)
 
+print("Queen area: ", Queen.A // 1, "m²")
+print("Worker area: ", round(Worker.A,1), "m²")
 print("Queen depth: ", d_best // 1, "m")
-print("Worker depth: ", d_worker // 1, "m")
+print("Worker depth: ", round(d_worker,1), "m")
 print("Worker offset: ", worker_offset // 1, "m")
 print("Sting offset: ", o_s // 1, "m")
 print("Sting radius: ", r_s // 1, "m")
 print("Relay offset: ", o_r // 1, "m")
 print("Relay radius: ", r_r // 1, "m")
+print("Sting area: ", A_s // 1, "m²")
+print("Relay area: ", A_r // 1, "m²")
+
 print("Total mass: ", mass // 1, "kg")
 
 print("\nParabola shape: y = {}*(1 - x²/{}²)\nfor x in [{},{}]".format(Queen.d//1, Queen.r//1, -Queen.r//1, Queen.r//1))
