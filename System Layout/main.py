@@ -17,6 +17,12 @@ Parabola.length = length of curve segment of a parabola (Queen, worker)
 FP = focal point
 For the angles (Greek letters)(and general overview of blindspot mitigation) refer to sketch in Notion: subsystem outlines > downlink > blindspot mitigation draft
 
+Body reference:
+Worker to Queen offset is measured from rim to rim
+sting offset is measured from Queen rim to center sting (reflector)
+relay   "    "      "       "   "   "   "   "    relay
+so the angles are measured consistent with the drawings in notion, but the distances are not (or not always)
+
 Mass Estimations:
 Reflectors (sting+relay): 1 area + 4 radial trusses + 1 circumferential truss + 2 connecting trusses to main struct
 Queen+worker: 1 area + 4 "radial" trusses + 4 connecting trusses
@@ -31,17 +37,22 @@ m_t = 1500  # mass of truss per m
 m_m = 15  # mass of rigid mirror per m²
 m_f = 0.15  # mass of reflective foil per m²
 
+#---------
+# USER INPUT
+#------------
 r_queen = 500 # radius of big dish (TBD on power requirement as well --> inner region is gonna be solar cells)
 r_beam = 10 # aperture radius: same as beam, same as lens (TBD)
+#________________
+#----------------
 
 print("Busy making", (r_queen//2)*600*1500*10, "different Honey configurations and calculating their mass so gimme a break OK\n")
 
 DEPTHS = np.linspace(1, r_queen / 2 + 1, r_queen//2) # Range of big dish depths
 
 # setup ranges for mass minimisation
-TOTAL_MASS = []
-RELAY_OFFSETS = [] # Queen rim to relay distance
-BEST_MARGIN = []
+TOTAL_MASS = [] #this list will collect all the calculated total masses
+RELAY_OFFSETS = [] # Queen rim to relay distance, corresponding to calculated mass
+BEST_MARGIN = [] # gamma-beta overlap, corresponding to calculated mass
 
 for d_queen in DEPTHS:
     d_worker = d_queen * r_beam / r_queen #small dish has same shape as big dish but scaled down, so same
@@ -75,7 +86,7 @@ for d_queen in DEPTHS:
         d_margin = gamma - beta_min
 
         ANGLE = np.linspace(margin, margin + d_margin, 10) #range of angle margins for beta
-        REFLECTOR_MASS = []
+        REFLECTOR_MASS = []# this list will collect the reflector configuration masses for a specific dish depth
         for angle in ANGLE:
             o_s, o_r, r_s, r_r, A_s, A_r = arrange_sting(relay_offset, r_queen, r_beam, 1, gamma, rho, angle)
 
