@@ -315,15 +315,21 @@ if __name__ == "__main__":
 
     ikaros = au.make_sat([data['radius'] + 1750, 0.0, 0.0, 0.0, 0.0, 0.0],
                          'IKAROS',
-                         10000.0,
-                         au.init_perts(J2=True, isp=5000, thrust=5.0),
-                         35786.0, )
+                         1000.0,
+                         au.init_perts(J2=True, isp=5000, thrust=10.0),
+                         data['radius'] + 35786.0, )
 
     iss = au.make_sat([data['radius'] + 418, 0.0000933, 51.6444, 0.0, 193.3222, 77.2969],
                       'ISS',
                       419000.0,
                       au.init_perts(J2=True, isp=4300, thrust=0.327),
                       None)
+
+    random = au.make_sat([data['radius'] + 418, 0.0000933, 31.6444, 0.0, 174.3222, 77.2969],
+                         'Random',
+                         100.0,
+                         au.init_perts(J2=True, isp=4300, thrust=5.0),
+                         data['radius'] + 13500)
 
     crash = au.make_sat([data['radius'] + 400, 0.1, 51.6444, 0.0, 193.3222, 77.2969],
                         'Crash',
@@ -342,8 +348,10 @@ if __name__ == "__main__":
                               cb=data,
                               perts=ikaros['perts'])
 
+    tmax = au.get_orbit_time(ikaros0.ts, [1, 0, 0])
+
     iss0 = OrbitPropagator(state0=iss['state'],
-                           tspan=3600 * 24 * 2.0,
+                           tspan=tmax,
                            dt=10.0,
                            target=iss['target'],
                            coes=True,
@@ -351,6 +359,35 @@ if __name__ == "__main__":
                            mass0=iss['mass'],
                            cb=data,
                            perts=iss['perts'])
+
+    random0 = OrbitPropagator(state0=random['state'],
+                              tspan=tmax,
+                              dt=10.0,
+                              target=random['target'],
+                              coes=True,
+                              deg=True,
+                              mass0=random['mass'],
+                              cb=data,
+                              perts=random['perts'])
+
+    random1 = OrbitPropagator(state0=np.array(random0.rs[-1].tolist() + random0.vs[-1].tolist()),
+                              tspan=tmax - random0.ts[-1][0],
+                              dt=10.0,
+                              target=None,
+                              coes=False,
+                              deg=True,
+                              mass0=random0.masses[-1],
+                              cb=data,
+                              perts=random['perts'])
+
+    random2 = random0.rs.tolist() + random1.rs.tolist()
+    random2 = np.array(random2)
+
+    # ikaros0.plot_3d(show_plot=False)
+    #
+    # iss0.plot_3d(show_plot=False, title="ISS Orbit with J2 Perturbation")
+
+    DataHandling().make_anim([ikaros0.rs, random2], [ikaros0.ts], ['IKAROS', 'Random'])
 
     # crash0 = OrbitPropagator(state0=crash['state'],
     #                          tspan=3600 * 24,
@@ -364,18 +401,14 @@ if __name__ == "__main__":
     #
     # crash0.plot_3d(show_plot=True)
 
-    ikaros0.plot_3d(show_plot=False)
-
-    iss0.plot_3d(show_plot=False, title="ISS Orbit with J2 Perturbation")
-
-    au.plot_n_orbits([ikaros0.rs, iss0.rs],
-                     labels=[
-                         f"{ikaros['name']} Trajectory {au.get_orbit_time(ikaros0.ts, [0, 0, 1])} days",
-                         f"{iss['name']} Trajectory {au.get_orbit_time(iss0.ts)} hrs"],
-                     show_plot=True,
-                     save_plot=False,
-                     title=f"{ikaros['name']} Transfer and {iss['name']} trajectory"
-                           f"\nLongest Trajectory {max(au.get_orbit_time(ikaros0.ts, [0, 0, 1]), au.get_orbit_time(iss0.ts, [0, 0, 1]))} days")
+    # au.plot_n_orbits([ikaros0.rs, iss0.rs],
+    #                  labels=[
+    #                      f"{ikaros['name']} Trajectory {au.get_orbit_time(ikaros0.ts, [0, 0, 1])} days",
+    #                      f"{iss['name']} Trajectory {au.get_orbit_time(iss0.ts)} hrs"],
+    #                  show_plot=True,
+    #                  save_plot=False,
+    #                  title=f"{ikaros['name']} Transfer and {iss['name']} trajectory"
+    #                        f"\nLongest Trajectory {max(au.get_orbit_time(ikaros0.ts, [0, 0, 1]), au.get_orbit_time(iss0.ts, [0, 0, 1]))} days")
 
     # TODO: Fix/Verify coes calculation, rv2coes and coes2rv
     # ikaros0.calculate_coes()

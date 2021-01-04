@@ -3,8 +3,10 @@ import numpy as np
 from numpy import ndarray
 import math as m
 import matplotlib.pyplot as plt
+from celluloid import Camera
 import csv
-import PIL
+import os
+import imageio
 from mpl_toolkits.mplot3d import Axes3D
 
 
@@ -73,6 +75,78 @@ class DataHandling:
             fig.savefig(save_path, dpi=300)
         else:
             fig.savefig(save_path)
+        return
+
+    def make_anim(self, rs: list, ts: list, labels: list, cb=None, title='Orbit Animation'):
+        if cb is None:
+            cb = DataHandling().import_centre_body('earth')
+        fig = plt.figure(figsize=(10, 10))
+        camera = Camera(fig)
+        ax = fig.add_subplot(111, projection='3d')
+        # rs = []
+        # ts = []
+        # for orbit in orbits:
+        #     rs.append(orbit.rs)
+        #     ts.append(orbit.ts)
+
+        ts = max(ts, key=len)
+
+        max_val = 0
+        for r in rs:
+            max_val = max(max_val, np.max(np.abs(r)))
+
+        n_steps = max(map(len, rs))
+        frames = 120
+        step_size = m.ceil(n_steps / frames)
+        step = 0
+        f = 0
+        n = 0
+
+        imgs = []
+
+        while step < n_steps:
+            plt.cla()
+            # Plot central body
+            _u, _v = np.mgrid[0:2 * np.pi:20j, 0:np.pi:10j]
+            _x = cb['radius'] * np.cos(_u) * np.sin(_v)
+            _y = cb['radius'] * np.sin(_u) * np.sin(_v)
+            _z = cb['radius'] * np.cos(_v)
+            ax.plot_wireframe(_x, _y, _z, color='lightskyblue', linewidth=0.5)
+
+            # Plot the x,y,z vectors
+            l = cb['radius'] * 2
+            x, y, z = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+            u, v, w = [[l, 0, 0], [0, l, 0], [0, 0, l]]
+
+            ax.quiver(x, y, z, u, v, w, color='r')
+
+            ax.set_xlabel('X (km)')
+            ax.set_ylabel('Y (km)')
+            ax.set_zlabel('Z (km)')
+
+            ax.set_aspect('auto')
+            ax.set_xlim([-max_val, max_val])
+            ax.set_ylim([-max_val, max_val])
+            ax.set_zlim([-max_val, max_val])
+
+            for r in rs:
+                ax.plot(r[:step, 0], r[:step, 1], r[:step, 2], label=labels[n])
+                ax.plot([r[step, 0]], [r[step, 1]], [r[step, 2]], 'ko')
+                n += 1
+            n = 0
+
+            plt.legend()
+            ax.set_title(f"{title}\n Time elapsed {round(ts[step][0] / 3600.0, 2)} hrs")
+            DataHandling().save_figure(fig, f"frame_{f}", path="animations/frames", filetype='jpg')
+            imgs.append(imageio.imread(f"{self.data_path}/animations/frames/frame_{f}.jpg"))
+            print(f"Frame: {f}")
+            step += step_size
+            f += 1
+
+        images = os.listdir(f"{self.data_path}/animations/frames/")
+        imageio.mimsave(f"{self.data_path}/animations/anim.gif", imgs, format='GIF', fps=10)
+        for im in images:
+            os.remove(f"{self.data_path}/animations/frames/{im}")
         return
 
 
