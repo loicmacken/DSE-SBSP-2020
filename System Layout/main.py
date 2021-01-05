@@ -41,7 +41,7 @@ m_f = 0.15  # mass of reflective foil per m²
 #---------
 # USER INPUT
 #------------
-r_queen = 500 # radius of big dish (TBD on power requirement as well --> inner region is gonna be solar cells)
+r_queen = 450 # radius of big dish (TBD on power requirement as well --> inner region is gonna be solar cells)
 r_beam = 10 # aperture radius: same as beam, same as lens (TBD)
 #________________
 #----------------
@@ -65,7 +65,7 @@ for d_queen in DEPTHS:
     struct1 = truss(-r_queen, -r_beam, 0, worker_offset)
     struct2 = truss(r_beam, r_queen, worker_offset, 0)
 
-    RO = np.linspace(0, 600, 600) #range of relay offsets
+    RO = np.linspace(0, 1000, 1000) #range of relay offsets
     MASS = [] # setup lists for reflectors' (sting + relay) masses
     MARGINS = [] # setup list for beta-gamma overlap angles (see later)
 
@@ -91,6 +91,10 @@ for d_queen in DEPTHS:
         for angle in ANGLE:
             o_s, o_r, r_s, r_r, A_s, A_r = arrange_sting(relay_offset, r_queen, r_beam, 1, gamma, rho, angle)
 
+            if r_r < r_queen:
+                extra = r_queen - np.sqrt(r_queen**2 - r_r**2)
+                o_r = o_r + extra
+                #print(r_r, extra)
             # reflectors' (sting+relay) masses based on, area (with mirrors, radii and circumference (with trusses, for support), and offsets (with trusses)
             reflector_mass = 2 * m_t * (o_s + o_r) + 4 * m_t * (r_r + r_s) + 2 * np.pi * (r_s + r_r) + m_m * (A_r + A_s)
             REFLECTOR_MASS.append(reflector_mass)
@@ -127,23 +131,23 @@ struct2 = truss(r_beam, r_queen, worker_offset, 0)
 
 gamma, rho, margin = arrange_relay(offset_best, r_queen, d_best, r_beam, worker_offset, 1)
 o_s, o_r, r_s, r_r, A_s, A_r = arrange_sting(offset_best, r_queen, r_beam, 1, gamma, rho, margin_best)
-
+extra = r_queen - np.sqrt(r_queen**2 - r_r**2)
 struct3 = truss(-1, 0, -d_best, -o_s)
-struct4 = truss(-(r_queen + o_r), -r_queen, 0, 0)
+struct4 = truss(-(r_queen + o_r), -(r_queen-extra), 0, 0)
 
 mass = min(TOTAL_MASS)
 
-print("Queen area: ", Queen.A // 1, "m²")
-print("Worker area: ", round(Worker.A,1), "m²")
+print("Queen area: ", Queen.A, "m²")
+print("Worker area: ", Worker.A, "m²")
 print("Queen depth: ", d_best // 1, "m")
 print("Worker depth: ", round(d_worker,1), "m")
 print("Worker offset: ", worker_offset // 1, "m")
 print("Sting offset: ", o_s // 1, "m")
-print("Sting radius: ", r_s // 1, "m")
+print("Sting radius: ", r_s, "m")
 print("Relay offset: ", o_r // 1, "m")
-print("Relay radius: ", r_r // 1, "m")
-print("Sting area: ", A_s // 1, "m²")
-print("Relay area: ", A_r // 1, "m²")
+print("Relay radius: ", r_r, "m")
+print("Sting area: ", A_s, "m²")
+print("Relay area: ", A_r , "m²")
 
 print("Total mass: ", mass // 1, "kg")
 
@@ -151,7 +155,7 @@ print("\nParabola shape: y = {}*(1 - x²/{}²)\nfor x in [{},{}]".format(Queen.d
 
 plt.plot(Queen.X, Queen.Y, 'b')
 plt.plot(Worker.X, Worker.Y + worker_offset, 'b')
-plt.plot(Queen.FP - Queen.d, '.')
+#plt.plot(Queen.FP - Queen.d, '.')
 plt.plot(struct1.X, struct1.Y, 'r')
 plt.plot(struct2.X, struct2.Y, 'r')
 plt.plot(struct3.X, struct3.Y, 'r')

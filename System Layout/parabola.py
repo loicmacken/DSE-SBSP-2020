@@ -40,10 +40,10 @@ def arrange_sting(relay_offset, r_big, r_beam, margin, gamma, rho, beta_marg):
 
     alpha_max = max((np.pi - delta) / 2, (np.pi - rho + alpha) / 2)
 
-    r_sting = r_beam / np.cos(rho / 2)
+    r_sting = r_beam / abs(np.cos(rho / 2))
     A_sting = np.pi * r_sting ** 2
 
-    r_relay = r_beam / np.cos(alpha_max)
+    r_relay = r_beam / abs(np.cos(alpha_max))
     A_relay = np.pi * r_relay ** 2
 
     return sting_offset, relay_offset, r_sting, r_relay, A_sting, A_relay
