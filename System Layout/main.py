@@ -41,14 +41,17 @@ m_f = 0.15  # mass of reflective foil per m²
 #---------
 # USER INPUT
 #------------
-r_queen = 450 # radius of big dish (TBD on power requirement as well --> inner region is gonna be solar cells)
-r_beam = 10 # aperture radius: same as beam, same as lens (TBD)
+A_pv = 5*10**6 / 1362 # 5MW for bus power from pv cells
+r_beam = 10
+A_dish = 863*10**6 / 1362 # 800 MW for payload power by parabolic dish
 #________________
 #----------------
 
+r_queen, w_d, w_pv = get_radius(r_beam, A_pv, A_dish)
+
 print("Busy making", (r_queen//2)*600*1500*10, "different Honey configurations and calculating their mass so gimme a break OK\n")
 
-DEPTHS = np.linspace(1, r_queen / 2 + 1, r_queen//2) # Range of big dish depths
+DEPTHS = np.linspace(1, r_queen // 2 + 1, r_queen//2) # Range of big dish depths
 
 # setup ranges for mass minimisation
 TOTAL_MASS = [] #this list will collect all the calculated total masses
