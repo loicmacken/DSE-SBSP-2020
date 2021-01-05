@@ -42,7 +42,7 @@ m_f = 0.15  # mass of reflective foil per m²
 # USER INPUT
 #------------
 A_pv = 5*10**6 / 1362 # 5MW for bus power from pv cells
-r_beam = 10
+r_beam = 50
 A_dish = 863*10**6 / 1362 # 800 MW for payload power by parabolic dish
 #________________
 #----------------
