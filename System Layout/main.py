@@ -51,7 +51,7 @@ r_queen, w_d, w_pv = get_radius(r_beam, A_pv, A_dish)
 
 print("Busy making", (r_queen//2)*600*1500*10, "different Honey configurations and calculating their mass so gimme a break OK\n")
 
-DEPTHS = np.linspace(1, r_queen // 2 + 1, r_queen//2) # Range of big dish depths
+DEPTHS = np.linspace(1, r_queen // 2 + 1, r_queen//2) # Range of big dish depths, upper limit relates to the depth where the FP would lie at the level of the dish rim
 
 # setup ranges for mass minimisation
 TOTAL_MASS = [] #this list will collect all the calculated total masses
@@ -142,7 +142,7 @@ mass = min(TOTAL_MASS)
 
 print("Queen area: ", Queen.A, "m²")
 print("Worker area: ", Worker.A, "m²")
-print("Queen depth: ", d_best // 1, "m")
+print("Queen depth: ", d_best, "m")
 print("Worker depth: ", round(d_worker,1), "m")
 print("Worker offset: ", worker_offset // 1, "m")
 print("Sting offset: ", o_s // 1, "m")

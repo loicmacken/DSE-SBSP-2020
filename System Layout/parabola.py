@@ -7,7 +7,7 @@ class parabola:
         self.r = radius  # Dish radius
         self.FP = (self.r ** 2) / (4 * self.d)  # Height focal point from bottom dish
 
-        # Shape
+        #Shape
         self.X = np.arange(-radius, radius, 0.5)
         self.Y = (-1) ** up * self.d * (1 - self.X ** 2 / self.r ** 2)
 
