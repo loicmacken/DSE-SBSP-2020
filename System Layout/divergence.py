@@ -42,6 +42,10 @@ for i in np.arange(0,len(planets)):
         calc = Calculator(planet1,planet2)
         angle = calc.divergenceangle()
         anglelist.append([planet_names[i],planet_names[j],angle])
+anglelist_just_angles = [x[2] for x in anglelist]
+max_angle = max(anglelist_just_angles)
+min_angle = min(anglelist_just_angles)
+avg_angle = sum(anglelist_just_angles)/len(anglelist_just_angles)
 
 #all possible combinations printed
 """
