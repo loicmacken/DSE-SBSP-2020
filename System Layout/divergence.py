@@ -46,7 +46,7 @@ anglelist_just_angles = [x[2] for x in anglelist]
 max_angle = max(anglelist_just_angles)
 min_angle = min(anglelist_just_angles)
 avg_angle = sum(anglelist_just_angles)/len(anglelist_just_angles)
-
+print(avg_angle*36*10**6)
 #all possible combinations printed
 """
 start_number = 0
