@@ -25,12 +25,12 @@ so the angles are measured consistent with the drawings in notion, but the dista
 
 Mass Estimations:
 Reflectors (sting+relay): 1 area + 4 radial trusses + 1 circumferential truss + 2 connecting trusses to main struct
-Queen+worker: 1 area + 4 "radial" trusses + 4 connecting trusses
+Queen+worker: 1 area + 4 "radial" trusses following the shape of the curve + 4 connecting trusses
 all much like Chris's drawing
 
 Note:
 The code is kinda inefficient and takes around 20 secs, so be patient
-alternetively you can change the number of steps in the iterations
+alternatively you can change the number of steps in the iterations
 """
 
 # Mass estimates [kg] (as in order of magnitude is in the correct range)
@@ -38,11 +38,11 @@ m_t = 1500  # mass of truss per m
 m_m = 15  # mass of rigid mirror per m²
 m_f = 0.15  # mass of reflective foil per m²
 
-#---------
+#------------
 # USER INPUT
 #------------
 A_pv = 5*10**6 / 1362 # 5MW for bus power from pv cells
-r_beam = 50
+r_beam = 10
 A_dish = 863*10**6 / 1362 # 800 MW for payload power by parabolic dish
 #________________
 #----------------
@@ -82,7 +82,7 @@ for d_queen in DEPTHS:
         #delta is the angle difference between beta and alpha, d_delta looks for the maximum delta for a range of REFLECTOR offsets
         d_delta = r_queen / (x ** 2 * (r_queen ** 2 / x ** 2 + 1)) - (r_queen + relay_offset) / (x ** 2 * ((r_queen + relay_offset) ** 2 / x ** 2) + 1)
         soff_max = np.where(abs(d_delta) < 0.001)[0]
-        soff_max = soff_max[len(soff_max) // 2] # max sting offset, a larger offset would only increase both delta and structural mass
+        soff_max = soff_max[len(soff_max) // 2] # max sting offset, a larger offset would only decrease delta and increase structural mass
         max_delta = abs(np.arctan((r_queen + relay_offset) / soff_max) - np.arctan(r_queen / soff_max))
         alpha_min = abs(np.arctan((r_queen + relay_offset)/soff_max))
         beta_min = alpha_min - max_delta
@@ -109,7 +109,7 @@ for d_queen in DEPTHS:
 
     w_i = MASS.index(min(MASS))
 
-    total_weight = min(MASS) + 4 * m_t * (Queen.length + Worker.length) + 2 * m_t * (struct1.length + struct2.length) \
+    total_weight = min(MASS) + 4 * m_t * (Queen.length + Worker.length) + 1 * m_t * (struct1.length + struct2.length) \
                    + m_f * (Queen.A + Worker.A) # total mass of the struct for this specific queen depth
 
     TOTAL_MASS.append(total_weight)
@@ -126,11 +126,11 @@ margin_best = BEST_MARGIN[i] #margin " " " "
 # configure the final system
 d_worker = d_best * r_beam / r_queen
 
-Queen = parabola(r_queen, d_best)
-Worker = parabola(r_beam, d_worker, up=0)
-worker_offset = Queen.FP - Queen.d + Worker.FP - Worker.d
-struct1 = truss(-r_queen, -r_beam, 0, worker_offset)
-struct2 = truss(r_beam, r_queen, worker_offset, 0)
+Queen = parabola(r_queen, d_best) # create the big paraboloid
+Worker = parabola(r_beam, d_worker, up=0) # create the small paraboloid
+worker_offset = Queen.FP - Queen.d + Worker.FP - Worker.d # rim to rim distance beween queen and worker
+struct1 = truss(-r_queen, -r_beam, 0, worker_offset)  # 1 truss connecting queen and worker
+struct2 = truss(r_beam, r_queen, worker_offset, 0) # 1 other truss connecting queen and worker, (the fact that i create two is mostly just for plotting)
 
 gamma, rho, margin = arrange_relay(offset_best, r_queen, d_best, r_beam, worker_offset, 1)
 o_s, o_r, r_s, r_r, A_s, A_r = arrange_sting(offset_best, r_queen, r_beam, 1, gamma, rho, margin_best)
@@ -140,21 +140,24 @@ struct4 = truss(-(r_queen + o_r), -(r_queen-extra), 0, 0)
 
 mass = min(TOTAL_MASS)
 
-print("Queen area: ", Queen.A, "m²")
-print("Worker area: ", Worker.A, "m²")
-print("Queen depth: ", d_best, "m")
-print("Worker depth: ", round(d_worker,1), "m")
-print("Worker offset: ", worker_offset // 1, "m")
-print("Sting offset: ", o_s // 1, "m")
-print("Sting radius: ", r_s, "m")
-print("Relay offset: ", o_r // 1, "m")
-print("Relay radius: ", r_r, "m")
-print("Sting area: ", A_s, "m²")
-print("Relay area: ", A_r , "m²")
+print("Intake radius: ", round(r_queen, 2), "m")
+print("Aperture radius: ", round(r_beam, 2), "m")
+print("PV cell disk width: ", round(w_pv, 2), "m")
+print("Queen area: ", round(Queen.A, 2), "m²")
+print("Worker area: ", round(Worker.A, 2), "m²")
+print("Queen depth: ", round(d_best, 2), "m")
+print("Worker depth: ", round(d_worker,2), "m")
+print("Worker offset: ", round(worker_offset, 2), "m")
+print("Sting offset: ", round(o_s, 2), "m")
+print("Sting radius: ", round(r_s, 2), "m")
+print("Relay offset: ", round(o_r, 2), "m")
+print("Relay radius: ", round(r_r, 2), "m")
+print("Sting area: ", round(A_s, 2), "m²")
+print("Relay area: ", round(A_r, 2), "m²")
 
-print("Total mass: ", mass // 1, "kg")
+print("Total mass: ", round(mass, 2), "kg")
 
-print("\nParabola shape: y = {}*(1 - x²/{}²)\nfor x in [{},{}]".format(Queen.d//1, Queen.r//1, -Queen.r//1, Queen.r//1))
+print("\nParabola shape: y = {}*(1 - x²/{}²)\nfor x in [{},{}]".format(round(Queen.d,2), round(Queen.r,2), round(-Queen.r,2), round(Queen.r,2)))
 
 plt.plot(Queen.X, Queen.Y, 'b')
 plt.plot(Worker.X, Worker.Y + worker_offset, 'b')
