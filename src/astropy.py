@@ -76,6 +76,26 @@ class OrbitPropagator(AstroUtils):
         # COEs only allocated if calculate_coes is used, otherwise it is a waste of memory
         self.coes = None
 
+        # Miscellaneous data
+        self.cb = cb
+        self.g0 = self.cb['mu'] * 1000 / self.cb['radius'] ** 2
+        self.perts = perts
+        self.target = target
+        self.transfer = transfer
+
+        if self.transfer == 'hohmann':
+            if self.perts['isp_rocket'] == 0.0:
+                raise ValueError("The specific impulse and thrust of the chemical rocket must be given for a Hohmann "
+                                 "transfer to be calculated.")
+
+            trans_orbit = self.hohmann_calculation(np.linalg.norm(self.r0), self.target, n_burns=1)
+            delta_vs = trans_orbit['1']['delta_vs']
+            self.tspan = 2 * trans_orbit['1']['t_transfer']
+            self.n_steps = int(np.ceil(self.tspan / self.dt))
+            coes = trans_orbit['1']['coes']
+            self.r0, self.v0 = self.coes2rv(coes, deg=deg)
+            self.dm = mass0 * (1 - m.exp(sum(delta_vs) * 1000 / self.perts['isp_rocket'] / self.g0))
+
         # Initial conditions
         self.mass0 = mass0
         self.y0 = self.r0.tolist() + self.v0.tolist() + [self.mass0]
@@ -87,12 +107,6 @@ class OrbitPropagator(AstroUtils):
         self.vs = self.ys[:, 3:6]
         self.masses = self.ys[:, -1]
 
-        # Miscellaneous data
-        self.cb = cb
-        self.perts = perts
-        self.target = target
-        self.transfer = transfer
-
         self.propagate_orbit()
 
     def propagate_orbit(self):
@@ -100,6 +114,7 @@ class OrbitPropagator(AstroUtils):
         Use scipy ode solver to propogate orbit through integration of position and velocity over time.
         :return: Updates orbit instance's r values over time steps
         """
+        print("Propagating orbit...")
         # Initiate solver
         solver = ode(self.diffy_q)
         solver.set_integrator('lsoda')
@@ -127,6 +142,8 @@ class OrbitPropagator(AstroUtils):
 
             if solver.t / 3600.0 / 24.0 % 1.0 == 0:
                 print(f"Time: {solver.t / 3600.0 / 24.0} days")
+                print(f"Position: {round(r_norm, 3)} km")
+                print()
 
         self.ts = self.ts[:self.step]
         self.rs = self.ys[:self.step, :3]
@@ -174,16 +191,15 @@ class OrbitPropagator(AstroUtils):
                 a_thrust = (v / np.linalg.norm(v)) * self.perts['thrust'] / mass / 1000.0  # km / s **2
 
                 # Derivative of total mass
-                g = 9.81
-                dmdt = - np.abs(self.perts['thrust']) / self.perts['isp'] / g
+                dmdt = - np.abs(self.perts['thrust']) / self.perts['isp'] / self.g0
                 a += a_thrust
-            elif self.transfer == 'hohmann':
-                a_thrust = self.perts['thrust_liquid'] / self.masses
-                # if r_norm == np.linalg.norm(self.r0):
-                #     dv1 = m.sqrt(self.cb['mu'] / r_norm) * (m.sqrt(2 * self.target / (r_norm + self.target)) - 1)
-                #
-                # elif r_norm == self.target:
-                #     dv2 = m.sqrt(self.cb['mu'] / self.target) * (1 - m.sqrt(2 * self.target / (r_norm + self.target)))
+            elif self.transfer == 'constant_rocket':
+                # Thrust vector
+                a_thrust = (v / np.linalg.norm(v)) * self.perts['thrust_rocket'] / mass / 1000.0  # km / s **2
+
+                # Derivative of total mass
+                dmdt = - np.abs(self.perts['thrust_rocket']) / self.perts['isp_rocket'] / self.g0
+                a += a_thrust
 
         return [vx, vy, vz, a[0], a[1], a[2], dmdt]
 
@@ -320,79 +336,76 @@ class OrbitPropagator(AstroUtils):
 
 
 if __name__ == "__main__":
-
     # Choose orbital body to get data from
     data = cb_data['earth']
 
     # COEs input
     # Altitude, Eccentricity, Inclination, True anomaly, Argument of Perigee, Right Acsension of Ascending Node
 
-    ikaros = au.make_sat([data['radius'] + 1750, 0.0, 0.0, 0.0, 0.0, 0.0],
+    ikaros = au.make_sat([data['radius'] + 500, 0.0, 0.0, 0.0, 0.0, 0.0],
                          'IKAROS',
-                         16227000.0 / 24.0,
-                         au.init_perts(J2=False, isp=5*450, thrust=500.0),
+                         100000.0,
+                         au.init_perts(J2=False, isp=5 * 5000, thrust=25.0,
+                                       thrust_rocket=5 * 500.0, isp_rocket=5 * 380),
                          target=data['radius'] + 35786.0)
 
-    # Create instances
-    ikaros0 = OrbitPropagator(state0=ikaros['state'],
-                              tspan=3600 * 24 * 365.0,
-                              dt=10.0,
-                              coes=True,
-                              deg=True,
-                              mass0=ikaros['mass'],
-                              cb=data,
-                              perts=ikaros['perts'],
-                              target=ikaros['target'],
-                              transfer='constant')
+    leo0 = OrbitPropagator(state0=ikaros['state'],
+                           tspan=3600 * 24.0 * 1.0,
+                           dt=10.0,
+                           coes=True,
+                           deg=True,
+                           mass0=ikaros['mass'],
+                           cb=data,
+                           perts=ikaros['perts'],
+                           target=ikaros['target'])
 
-    # ikaros0.plot_3d(show_plot=True)
+    transfer0 = OrbitPropagator(state0=[data['radius'] + 500.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                tspan=3600 * 24.0 * 365.0,
+                                dt=10.0,
+                                coes=True,
+                                deg=True,
+                                mass0=ikaros['mass'],
+                                cb=data,
+                                perts=ikaros['perts'],
+                                target=ikaros['target'],
+                                transfer='hohmann')
 
-    for i in range(6):
-        transfers = au.hohmann_calculation(data['radius'] + 1750, ikaros['target'], n_burns=i+1)
-        print(f"Transfer {i+1} limiting: {[sum(v['delta_vs']) for k, v in transfers.items()]}")
-    print(transfers)
+    geo0 = OrbitPropagator(state0=[ikaros['target'], 0.0, 0.0, 0.0, 0.0, 0.0],
+                           tspan=3600 * 24.0 * 2.0,
+                           dt=10.0,
+                           coes=True,
+                           deg=True,
+                           mass0=ikaros['mass'],
+                           cb=data,
+                           perts=ikaros['perts'])
 
-    props = {}
-    for orbit in range(len(transfers)):
-        props[f'transfer_{orbit}'] = OrbitPropagator(state0=transfers[f'{orbit + 1}']['coes'],
-                                                     tspan=transfers[f'{orbit + 1}']['t_transfer'],
-                                                     dt=10.0,
-                                                     coes=True,
-                                                     deg=True,
-                                                     mass0=ikaros['mass'],
-                                                     cb=data,
-                                                     perts=ikaros['perts'])
+    print(f"Initial mass: {transfer0.mass0} kg")
+    print(f"Final mass: {transfer0.mass0 + transfer0.dm} kg")
+    print(f"Propellant mass: {abs(transfer0.dm)} kg")
+    print(f"No. launches: {abs(transfer0.dm) / 100000}")
+    print(f"Orbit time: {transfer0.tspan / 3600.0} hrs")
+    print()
 
-        props[f'circ_{orbit}'] = OrbitPropagator(state0=np.array([np.linalg.norm(props[f'transfer_{orbit}'].rs[-1]), 0.0, 0.0, 0.0*((180*orbit)/360), 0.0, 0.0]),
-                                                 tspan=3600 * 24.0,
-                                                 dt=10.0,
-                                                 coes=True,
-                                                 deg=True,
-                                                 mass0=ikaros['mass'],
-                                                 cb=data,
-                                                 perts=ikaros['perts'])
+    # transfer0.plot_3d(show_plot=False)
 
-    # for orbit, prop in props.items():
-    #     prop.plot_3d(show_plot=True)
+    # transfer1 = OrbitPropagator(state0=ikaros['state'],
+    #                             tspan=3600 * 24.0 * 365.0,
+    #                             dt=10.0,
+    #                             coes=True,
+    #                             deg=True,
+    #                             mass0=ikaros['mass'],
+    #                             cb=data,
+    #                             perts=ikaros['perts'],
+    #                             target=ikaros['target'],
+    #                             transfer='constant_rocket')
+    #
+    # print(f"Initial mass: {transfer1.mass0} kg")
+    # print(f"Final mass: {round(transfer1.masses[-1], 4)} kg")
+    # print(f"Propellant mass: {abs(round(transfer1.masses[-1] - transfer1.mass0, 4))} kg")
+    # print(f"Orbit time: {au.get_orbit_time(transfer1.ts, [0, 0, 1])} days")
+    #
+    # transfer1.plot_3d(show_plot=False)
 
-    # ikaros1 = OrbitPropagator(state0=np.array([ikaros['target'], 0.0, 0.0, 0.0, 0.0, 0.0]),
-    #                           tspan=3600 * 24 * 2.0,
-    #                           dt=10.0,
-    #                           coes=True,
-    #                           deg=True,
-    #                           mass0=ikaros['mass'],
-    #                           cb=data,
-    #                           perts=ikaros['perts'])
-
-    # DataHandling().make_anim([ikaros0.rs, random2], [ikaros0.ts], ['IKAROS', 'Random'])
-
-    au.plot_n_orbits([ikaros0.rs] + [prop.rs for orbit, prop in props.items()],
-                     labels=[f"LEO Trajectory {au.get_orbit_time(ikaros0.ts)} hrs"] +
-                            [f"{orbit} Trajectory {au.get_orbit_time(prop.ts)} hrs" for orbit, prop in props.items()],
-                     show_plot=True,
-                     save_plot=False,
-                     title=f"{ikaros['name']} Transfer trajectory")
-
-    # TODO: Fix/Verify coes calculation, rv2coes and coes2rv
-    # ikaros0.calculate_coes()
-    # ikaros0.plot_coes(show_plot=True, hours=True)
+    au.plot_n_orbits([leo0.rs, transfer0.rs, geo0.rs], ['Refuel orbit', 'Parking (GTO) Orbit', 'Geosynchronous Orbit'],
+                     cb=data, show_plot=True, save_plot=True,
+                     title=f"Mission Plan\nMass {ikaros['mass']} kg")
