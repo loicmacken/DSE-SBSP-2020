@@ -49,7 +49,7 @@ A_dish = (100*10**6 / (0.91 * 0.94**3 * 0.55 * 0.3)) / 1362 # 100 MW output from
 
 r_queen, w_d, w_pv = get_radius(r_beam, A_pv, A_dish)
 
-print("Busy making", (r_queen//2)*600*1500*10, "different Honey configurations and calculating their mass so gimme a break OK\n")
+print("Busy making", (r_queen//2)*750*1000*10, "different Honey configurations and calculating their mass so gimme a break OK\n")
 
 DEPTHS = np.linspace(1, r_queen // 2 + 1, r_queen//2) # Range of big dish depths, upper limit relates to the depth where the FP would lie at the level of the dish rim
 
@@ -68,11 +68,11 @@ for d_queen in DEPTHS:
     struct1 = truss(-r_queen, -r_beam, 0, worker_offset)
     struct2 = truss(r_beam, r_queen, worker_offset, 0)
 
-    RO = np.linspace(0, 1000, 1000) #range of relay offsets
+    RO = np.linspace(0, 750, 750) #range of relay offsets
     MASS = [] # setup lists for reflectors' (sting + relay) masses
     MARGINS = [] # setup list for beta-gamma overlap angles (see later)
 
-    x = np.linspace(d_queen, d_queen + 1500, 1500)
+    x = np.linspace(d_queen, d_queen + 1000, 1000)
 
     for relay_offset in RO:
         gamma, rho, margin = arrange_relay(relay_offset, r_queen, d_queen, r_beam, worker_offset, 1)
