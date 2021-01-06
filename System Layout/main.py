@@ -43,7 +43,7 @@ m_f = 0.15  # mass of reflective foil per m²
 #------------
 A_pv = 5*10**6 / 1362 # 5MW for bus power from pv cells
 r_beam = 10
-A_dish = 863*10**6 / 1362 # 800 MW for payload power by parabolic dish
+A_dish = (100*10**6 / (0.91 * 0.94**3 * 0.55 * 0.3)) / 1362 # 100 MW output from groundstation
 #________________
 #----------------
 
@@ -110,7 +110,7 @@ for d_queen in DEPTHS:
     w_i = MASS.index(min(MASS))
 
     total_weight = min(MASS) + 4 * m_t * (Queen.length + Worker.length) + 1 * m_t * (struct1.length + struct2.length) \
-                   + m_f * (Queen.A + Worker.A) # total mass of the struct for this specific queen depth
+                   + m_f * Queen.A + m_m * Worker.A # total mass of the struct for this specific queen depth
 
     TOTAL_MASS.append(total_weight)
     RELAY_OFFSETS.append(RO[w_i])
@@ -142,6 +142,7 @@ mass = min(TOTAL_MASS)
 
 print("Intake radius: ", round(r_queen, 2), "m")
 print("Aperture radius: ", round(r_beam, 2), "m")
+print("PV cell area: ", round(A_pv, 2), "m²")
 print("PV cell disk width: ", round(w_pv, 2), "m")
 print("Queen area: ", round(Queen.A, 2), "m²")
 print("Worker area: ", round(Worker.A, 2), "m²")
