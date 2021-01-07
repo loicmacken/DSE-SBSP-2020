@@ -14,15 +14,23 @@ Solar_intensity = 1400 # Solar intensity in W/m2 - range between 1360 and 1420 W
 Earth_IR_intensity = 235 # Earth infrared radiation intensity - range between 218 and 244 W/m2 (SMAD)
 s_b = 5.67051*10**(-8) # Stefan-Boltzmann constant
 cp_alu = 0.91*1000 # Specific heat of aluminium in J/kgK
+cp_cop = 385.0 # Specific heat of copper in J/kgK
+cp_ag = 240.0 # Specific heat of silver in J/kgK
+k_alu = 205.0 # Thermal conductivity of aluminium in W/m K
+k_cop = 386.0 # Thermal conductivity of copper in W/m K
+K_ag = 406.0 # Thermal conductivity of silver in W/m K
 
-
-Dish_L_Dia = 500 # Diameter of large paraboloid in m
-Dish_L_Depth = 125 # Depth of large paraboloid in m
-Dish_S_Dia = 20 # Diameter of small paraboloid in m
-Dish_S_Depth = 2.5 # Depth of small paraboloid in m
-Relay_Dia = 126.421758*2 # Diameter of relay mirror in m
-e_mirr = 0.98 # Mirror efficiency, dimensionless
-e_lens = 0.99 # Lens efficiency, dimensionless
+Dish_L_Dia = 2*435 # Diameter of large paraboloid in m
+Dish_L_Depth = 70.32 # Depth of large paraboloid in m
+Dish_S_Dia = 50 # Diameter of small paraboloid in m
+Dish_S_Depth = 4.04 # Depth of small paraboloid in m
+Relay_Dia = 174.47*2 # Diameter of relay mirror in m
+Reflector_Dia = 37.1*2 # Diameter of the reflector "Sting" in m
+Struc_Len = 754.4*2 # Strut length across (/diameter) in m
+Lens_Thickness = 0.2 # Lens thickness in m
+e_mirr_S = 0.94 # Rigid mirror efficiency, dimensionless
+e_mirr_L = 0.91 # Foil mirror efficiency, dimensionless
+# e_lens = 0.99 # Lens efficiency, dimensionless
 
 def paraboloid_Area(diameter,depth):
     r,d = diameter/2,depth
@@ -30,21 +38,22 @@ def paraboloid_Area(diameter,depth):
 
 Mass_Dish_S = paraboloid_Area(Dish_S_Dia,Dish_S_Depth)*15
 Mass_Dish_L = paraboloid_Area(Dish_L_Dia,Dish_L_Depth)*0.15
-Mass_Struc = 4*Dish_L_Dia*1500
-Mass_Lens = 0.25*np.pi*Dish_S_Dia**2*0.2*2200
+Mass_Struc = Struc_Len*1500
+Mass_Lens = 0.25*np.pi*Dish_S_Dia**2*Lens_Thickness*2200
 Mass_Relay = (0.25*np.pi*Relay_Dia**2)*15
+Mass_Reflector = (0.25*np.pi*Reflector_Dia**2)*15
 
 """ 3D Shape and projections """
-df_model = pd.DataFrame(index=["Dish_S_Sun", "Dish_S_Mirror", "Dish_L_Mirror", "Dish_L_Back", "Add_Struc", "Lens", "Relay_Mirror", "Relay_Back"], columns = ["Emissivity", "Absorbtivity", "Heat_Capacity", "Total_Area","Eff_Sun_Area","Earth_Area_0","Earth_Area_90","Earth_Area_180","Earth_Area_270"])
-df_model["Emissivity"] =  [0.95, 0.05, 0.05, 0.95, 0.95, 0.93, 0.05, 0.95] 
-df_model["Absorbtivity"] = [0.35, 0.4, 0.4, 0.35, 0.35, 0.3, 0.4, 0.35]
+df_model = pd.DataFrame(index=["Dish_S_Sun", "Dish_S_Mirror", "Dish_L_Mirror", "Dish_L_Back", "Add_Struc", "Reflector_Mirror", "Reflector_Back", "Relay_Mirror", "Relay_Back"], columns = ["Emissivity", "Absorbtivity", "Total_Area","Eff_Sun_Area","Earth_Area_0","Earth_Area_90","Earth_Area_180","Earth_Area_270"])
+df_model["Emissivity"] =  [0.95, 0.05, 0.05, 0.95, 0.95, 0.05, 0.95, 0.05, 0.95] 
+df_model["Absorbtivity"] = [0.35, 1-e_mirr_S, 1-e_mirr_L, 0.94, 0.94, 1-e_mirr_S, 0.35, 1-e_mirr_S, 0.35]
 #df_model["Heat_Capacity"] = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-df_model["Total_Area"] = [paraboloid_Area(Dish_S_Dia,Dish_S_Depth), paraboloid_Area(Dish_S_Dia,Dish_S_Depth), paraboloid_Area(Dish_L_Dia,Dish_L_Depth), paraboloid_Area(Dish_L_Dia,Dish_L_Depth), 4*4*Dish_L_Dia, 2*Dish_S_Dia, (0.25*np.pi*Relay_Dia**2), (0.25*np.pi*Relay_Dia**2)]
-df_model["Eff_Sun_Area"] = [(0.25*np.pi*Dish_S_Dia**2), (0.25*np.pi*Dish_L_Dia**2)*e_mirr, (0.25*np.pi*Dish_L_Dia**2), (0.0), 4*Dish_L_Dia, (0.25*np.pi*Dish_L_Dia**2)*e_mirr*e_mirr, (0.25*np.pi*Dish_L_Dia**2)*e_mirr*e_mirr*e_lens, (0.0)]
-df_model["Earth_Area_0"] = [(0.0), (0.0), (0.0), (0.25*np.pi*Dish_L_Dia**2), (0.0), (0.0), (np.cos(np.radians(0))*0.25*np.pi*Relay_Dia**2), (0.0)]
-df_model["Earth_Area_90"] = [(4/3*Dish_S_Dia/2*Dish_S_Depth), (0.0), (0.0), (4/3*Dish_L_Dia/2*Dish_L_Depth), (np.cos(np.radians(30))*2*Dish_L_Dia), (0.0), (np.cos(np.radians(45))*0.25*np.pi*Relay_Dia**2), (0.0)]
-df_model["Earth_Area_180"] = [(0.25*np.pi*Dish_S_Dia**2), (0.0), ((0.25*np.pi*Dish_L_Dia**2)-(0.25*np.pi*Dish_S_Dia**2)), (0.0), (4*Dish_L_Dia), (0.0), (np.cos(np.radians(0))*0.25*np.pi*Relay_Dia**2), (0.0)]
-df_model["Earth_Area_270"] = [(4/3*Dish_S_Dia/2*Dish_S_Depth), (0.0), (0.0), (4/3*Dish_L_Dia/2*Dish_L_Depth), (np.cos(np.radians(30))*2*Dish_L_Dia), (0.0), (np.cos(np.radians(45))*0.25*np.pi*Relay_Dia**2), (0.0)]
+df_model["Total_Area"] = [paraboloid_Area(Dish_S_Dia,Dish_S_Depth)*3, paraboloid_Area(Dish_S_Dia,Dish_S_Depth), paraboloid_Area(Dish_L_Dia,Dish_L_Depth), paraboloid_Area(Dish_L_Dia,Dish_L_Depth), 4*Struc_Len, (0.25*np.pi*Reflector_Dia**2), (0.25*np.pi*Reflector_Dia**2)*3, (0.25*np.pi*Relay_Dia**2), (0.25*np.pi*Relay_Dia**2)]
+df_model["Eff_Sun_Area"] = [(0.25*np.pi*Dish_S_Dia**2), (0.25*np.pi*Dish_L_Dia**2)*e_mirr_L, (0.25*np.pi*Dish_L_Dia**2), (0.0), Struc_Len, (0.25*np.pi*Dish_L_Dia**2)*e_mirr_S*e_mirr_L, (0.0), (0.25*np.pi*Dish_L_Dia**2)*e_mirr_S**2*e_mirr_L, (0.0)]
+df_model["Earth_Area_0"] = [(0.0), (0.0), (0.0), (0.25*np.pi*Dish_L_Dia**2), (0.0), (0.0), (np.cos(np.radians(0))*0.25*np.pi*Reflector_Dia**2), (np.cos(np.radians(0))*0.25*np.pi*Relay_Dia**2), (0.0)]
+df_model["Earth_Area_90"] = [(4/3*Dish_S_Dia/2*Dish_S_Depth), (0.0), (0.0), (4/3*Dish_L_Dia/2*Dish_L_Depth), (np.cos(np.radians(30))*Struc_Len), (0.0), (np.cos(np.radians(0))*0.25*np.pi*Reflector_Dia**2), (np.cos(np.radians(45))*0.25*np.pi*Relay_Dia**2), (0.0)]
+df_model["Earth_Area_180"] = [(0.25*np.pi*Dish_S_Dia**2), (0.0), ((0.25*np.pi*Dish_L_Dia**2)-(0.25*np.pi*Dish_S_Dia**2)), (0.0), (Struc_Len), (0.0), (np.cos(np.radians(0))*0.25*np.pi*Reflector_Dia**2), (np.cos(np.radians(0))*0.25*np.pi*Relay_Dia**2), (0.0)]
+df_model["Earth_Area_270"] = [(4/3*Dish_S_Dia/2*Dish_S_Depth), (0.0), (0.0), (4/3*Dish_L_Dia/2*Dish_L_Depth), (np.cos(np.radians(30))*Struc_Len), (0.0), (np.cos(np.radians(0))*0.25*np.pi*Reflector_Dia**2), (np.cos(np.radians(45))*0.25*np.pi*Relay_Dia**2), (0.0)]
 
 def Proj_Area_Earth(angle, diameter=Dish_L_Dia, depth=Dish_L_Depth, A_proj=[None, None, None, None]): # Projected area of a paraboloid with specified dimensions at a specified angle wrt Earth
     if A_proj[0] == None:
@@ -85,16 +94,18 @@ def func_Qext(ab,em,albedo_eff,Js,JIR,Aeffsol,Aeffearth):
     qIR = func_qIR(em, JIR, Aeffearth)
     return qsol+qalb+qIR
 
+def func_Qint_from1to2(T1,T2,Aint, k=k_alu):
+    return -k*Aint*(T2 - T1)
 
 """ Set-up Time and Orbit """
 dt = 10 # in seconds
-hours = 72
+hours = 12
 df_orbit = pd.DataFrame(np.arange(0,hours*3600,dt), columns=["Timestep"])
 df_orbit["Orbit_Angle"] = (df_orbit["Timestep"]/86400 * 360)%360
 df_orbit["albedo_eff"] = np.where(df_orbit["Orbit_Angle"] < 90.0, np.cos(np.radians(df_orbit["Orbit_Angle"]))*albedo_earth, 0 )
 df_orbit["albedo_eff"] = np.where((df_orbit["Orbit_Angle"]) > 270.0, np.cos(np.radians(df_orbit["Orbit_Angle"]))*albedo_earth, df_orbit["albedo_eff"])
 
-df_T = pd.DataFrame(columns=['Dish_S_Sun','Dish_S_Mirror', 'Dish_L_Mirror', 'Dish_L_Back', 'Add_Struc', 'Lens', 'Relay_Mirror', 'Relay_Back']) # Initial internal temperature
+df_T = pd.DataFrame(columns=['Dish_S_Sun','Dish_S_Mirror', 'Dish_L_Mirror', 'Dish_L_Back', 'Add_Struc', "Reflector_Mirror", "Reflector_Back", 'Relay_Mirror', 'Relay_Back']) # Initial internal temperature
 df_T.loc[0] = 20 + 273.15
 """ Generate Data """
 
@@ -122,16 +133,17 @@ for i in df_orbit.index:
         df_orbit.at[i, component+"_heatbalance"] = df_orbit[component+"_Qext"].iloc[i]-df_orbit[component+"_Qrad"].iloc[i]
     
     df_T.loc[i+1] = df_T.loc[i]
-    df_T.loc[i+1]['Dish_S_Sun'] += (df_orbit["Dish_S_Sun_heatbalance"].iloc[i]+df_orbit["Dish_S_Mirror_heatbalance"].iloc[i])/(cp_alu*Mass_Dish_S)*dt
+    df_T.loc[i+1]['Dish_S_Sun'] += (df_orbit["Dish_S_Sun_heatbalance"].iloc[i]+df_orbit["Dish_S_Mirror_heatbalance"].iloc[i]+func_Qint_from1to2(df_T.loc[i]['Add_Struc'], df_T.loc[i]['Dish_S_Sun'], paraboloid_Area(Dish_S_Dia,Dish_S_Depth)))/(cp_alu*Mass_Dish_S)*dt
     df_T.loc[i+1]['Dish_S_Mirror'] = df_T.loc[i+1]['Dish_S_Sun']
     df_T.loc[i+1]['Dish_L_Mirror'] += (df_orbit["Dish_L_Back_heatbalance"].iloc[i]+df_orbit["Dish_L_Mirror_heatbalance"].iloc[i])/(cp_alu*Mass_Dish_L)*dt
     df_T.loc[i+1]['Dish_L_Back'] = df_T.loc[i+1]['Dish_L_Mirror']
-    df_T.loc[i+1]['Add_Struc'] += (df_orbit["Add_Struc_heatbalance"].iloc[i])/(cp_alu*Mass_Struc)*dt
-    df_T.loc[i+1]['Lens'] += (df_orbit["Lens_heatbalance"].iloc[i])/(cp_alu*Mass_Lens)*dt
+    df_T.loc[i+1]['Add_Struc'] += (df_orbit["Add_Struc_heatbalance"].iloc[i] + func_Qint_from1to2(df_T.loc[i]['Dish_S_Sun'], df_T.loc[i]['Add_Struc'], paraboloid_Area(Dish_S_Dia,Dish_S_Depth)))/(cp_alu*Mass_Struc)*dt
+#    df_T.loc[i+1]['Lens'] += (df_orbit["Lens_heatbalance"].iloc[i] + func_Qint_from1to2(df_T.loc[i]['Dish_L_Mirror'], df_T.loc[i]['Lens'], (np.pi*Dish_S_Dia*Lens_Thickness)))/(cp_alu*Mass_Lens)*dt
+    df_T.loc[i+1]['Reflector_Mirror'] += (df_orbit["Reflector_Mirror_heatbalance"].iloc[i]+df_orbit["Reflector_Back_heatbalance"].iloc[i])/(cp_alu*Mass_Reflector)*dt
+    df_T.loc[i+1]['Reflector_Back'] = df_T.loc[i+1]['Reflector_Mirror']
     df_T.loc[i+1]['Relay_Mirror'] += (df_orbit["Relay_Mirror_heatbalance"].iloc[i]+df_orbit["Relay_Back_heatbalance"].iloc[i])/(cp_alu*Mass_Relay)*dt
     df_T.loc[i+1]['Relay_Back'] = df_T.loc[i+1]['Relay_Mirror']
 
 
 """ Display Data """
-df_T[["Dish_S_Mirror","Dish_L_Mirror","Add_Struc","Lens","Relay_Mirror"]].plot()
-
+(df_T[["Dish_S_Mirror","Dish_L_Mirror","Add_Struc","Reflector_Mirror","Relay_Mirror"]]-273.15).plot()
