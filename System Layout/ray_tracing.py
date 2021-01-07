@@ -45,18 +45,6 @@ class Raytrace:
         self.Y1 = y1
         self.Y2 = y2
 
-    def parab_big(self):
-        self.X = np.arange(-self.parabola1_radius, self.parabola1_radius + self.step, self.step)
-        self.Y = (-1) ** self.up * self.parabola1_depth * (1 - self.X ** 2 / self.parabola1_radius ** 2)
-        """self.length = np.sqrt(self.parabola1_radius ** 2 + 4 * self.parabola1_depth ** 2) \
-                      + self.parabola1_radius ** 2 * np.arcsinh(2 * self.parabola1_depth / self.parabola1_radius) / (2 * self.parabola1_depth)
-        self.A = np.pi * self.parabola1_radius / (6 * self.parabola1_depth ** 2) * ((self.parabola1_radius ** 2 + 4 * self.parabola1_depth ** 2) ** (3 / 2) - self.parabola1_radius ** 3)"""
-        return([self.X, self.Y])
-    
-    def parab_small(self):
-        self.X2 = np.arange(-self.parabola2_radius, self.parabola2_radius + self.step, self.step)
-        self.Y2 = self.parabola2_depth * (1 - self.X2 ** 2 / self.parabola2_radius ** 2)
-        return(self.X2,self.Y2)
     def ray_start(self):
         self.intake_radius = self.parabola1_radius - self.parabola2_radius
         self.intake_left = self.intake_radius / 2
@@ -108,15 +96,21 @@ class Raytrace:
         self.abberation_x = self.reflect_xy[0] + (self.abberation_y -self.reflect_xy[1]) * np.tan(self.reflect_angle)
         return(self.abberation_x, self.abberation_y)
 
+    def collimation(self, starting_location_x): #find point where equation of beam is equal to equation of parabola
+        self.starting_location_x = starting_location_x
+        self.a = np.tan(self.reflection(self.starting_location_x)[1])
+        self.b = self.reflection(self.starting_location_x)[0][0] + self.a * self.reflection(self.starting_location_x)[0][1]
+        #find intersection with b2-4ac
+        return()
 
 
 
-y = Parabolas(400,10,71,0.01)
+
+y = Parabolas(400,25,71,0.01)
 x1,y1 = y.parab_big()
 x2,y2 = y.parab_small()
-
-x = Raytrace(20,400,10,71,0.01,x1,y1,x2,y2)
-print(x.focal_abberation(100))
+x = Raytrace(20,400,25,71,0.01,x1,y1,x2,y2)
+print(x.reflection(100))
 
 
 
