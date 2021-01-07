@@ -37,12 +37,13 @@ alternatively you can change the number of steps in the iterations
 m_t = 1500  # mass of truss per m
 m_m = 15  # mass of rigid mirror per m²
 m_f = 0.15  # mass of reflective foil per m²
+m_g = 75 # mass of mesh grid per m²
 
 #------------
 # USER INPUT
 #------------
-A_pv = 5*10**6 / 1362 # 5MW for bus power from pv cells
-r_beam = 10
+A_pv = 1.1*10**6 / (1362 * 0.27) # 5MW for bus power from pv cells
+r_beam = 25
 A_dish = (100*10**6 / (0.91 * 0.94**3 * 0.55 * 0.3)) / 1362 # 100 MW output from groundstation
 #________________
 #----------------
@@ -72,7 +73,7 @@ for d_queen in DEPTHS:
     MASS = [] # setup lists for reflectors' (sting + relay) masses
     MARGINS = [] # setup list for beta-gamma overlap angles (see later)
 
-    x = np.linspace(d_queen, d_queen + 1000, 1000)
+    x = np.linspace(d_queen, d_queen + 750, 750)
 
     for relay_offset in RO:
         gamma, rho, margin = arrange_relay(relay_offset, r_queen, d_queen, r_beam, worker_offset, 1)
@@ -99,7 +100,7 @@ for d_queen in DEPTHS:
                 o_r = o_r + extra
                 #print(r_r, extra)
             # reflectors' (sting+relay) masses based on, area (with mirrors, radii and circumference (with trusses, for support), and offsets (with trusses)
-            reflector_mass = 2 * m_t * (o_s + o_r) + 4 * m_t * (r_r + r_s) + 2 * np.pi * (r_s + r_r) + m_m * (A_r + A_s)
+            reflector_mass = 2 * m_t * (o_s + o_r) + 2 * m_t * (r_r + r_s) + 2 * np.pi * (r_s + r_r) + m_m * (A_r + A_s)
             REFLECTOR_MASS.append(reflector_mass)
 
         a_i = REFLECTOR_MASS.index(min(REFLECTOR_MASS)) # find optimal margin angle based on minimum reflectors' masses
@@ -109,8 +110,8 @@ for d_queen in DEPTHS:
 
     w_i = MASS.index(min(MASS))
 
-    total_weight = min(MASS) + 4 * m_t * (Queen.length + Worker.length) + 1 * m_t * (struct1.length + struct2.length) \
-                   + m_f * Queen.A + m_m * Worker.A # total mass of the struct for this specific queen depth
+    total_weight = min(MASS) + 0 * m_t * (Queen.length + Worker.length) + 4 * m_t * struct1.length\
+                   + (m_f + m_g) * Queen.A + (m_m + m_g) * Worker.A # total mass of the struct for this specific queen depth
 
     TOTAL_MASS.append(total_weight)
     RELAY_OFFSETS.append(RO[w_i])
@@ -155,6 +156,7 @@ print("Relay offset: ", round(o_r, 2), "m")
 print("Relay radius: ", round(r_r, 2), "m")
 print("Sting area: ", round(A_s, 2), "m²")
 print("Relay area: ", round(A_r, 2), "m²")
+print("truss length: ", struct1.length,"m")
 
 print("Total mass: ", round(mass, 2), "kg")
 
