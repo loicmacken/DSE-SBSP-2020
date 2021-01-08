@@ -32,6 +32,7 @@ aperture lens
 intake area
 
 print(np.gradient(x,y))"""
+"""
 class test:
     def __init__(self, val):
         self.val = val
@@ -69,9 +70,9 @@ class Raytrace:
     def parab_big(self):
         self.X = np.arange(-self.parabola1_radius, self.parabola1_radius + self.step, self.step)
         self.Y = (-1) ** self.up * self.parabola1_depth * (1 - self.X ** 2 / self.parabola1_radius ** 2)
-        """self.length = np.sqrt(self.parabola1_radius ** 2 + 4 * self.parabola1_depth ** 2) \
+        self.length = np.sqrt(self.parabola1_radius ** 2 + 4 * self.parabola1_depth ** 2) \
                       + self.parabola1_radius ** 2 * np.arcsinh(2 * self.parabola1_depth / self.parabola1_radius) / (2 * self.parabola1_depth)
-        self.A = np.pi * self.parabola1_radius / (6 * self.parabola1_depth ** 2) * ((self.parabola1_radius ** 2 + 4 * self.parabola1_depth ** 2) ** (3 / 2) - self.parabola1_radius ** 3)"""
+        self.A = np.pi * self.parabola1_radius / (6 * self.parabola1_depth ** 2) * ((self.parabola1_radius ** 2 + 4 * self.parabola1_depth ** 2) ** (3 / 2) - self.parabola1_radius ** 3)
         return(self.X, self.Y)
     
     def parab_small(self):
@@ -140,10 +141,15 @@ x = Raytrace(20,400,10,71,0.01)
 print(x.focal_abberation(100))
 
 
-
+"""
 """
 xval = x.parabola()[0]
 yval = x.parabola()[1]
 plt.plot(xval,yval)
 plt.axis('equal')
 plt.show()"""
+"""self.intersect_angled_x = self.starting_location_x - np.tan(self.divergence + self.parabola1_angle) * self.intersect_unangled_distance_y \
+                                     * (np.tan(self.intersect_unangled_local_gradient) / (np.tan(self.intersect_unangled_local_gradient) + np.tan(self.divergence + self.parabola1_angle)) )#calculate the x coordinate of the angled beam through some geometry calculations-> dist=wtana/(tana+tanb)
+        self.intersect_angled_index = min(range(len(self.X1)), key = lambda i: abs(self.X1[i]-self.intersect_angled_x)) #same story as other index but now for angled intersect"""
+
+print(-100*5.589399426239643 + -149.7345831829127 )
