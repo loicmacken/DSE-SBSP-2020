@@ -46,7 +46,7 @@ def arrange_sting(relay_offset, r_big, r_beam, margin, gamma, rho, beta_marg):
     r_relay = r_beam / abs(np.cos(alpha_max))
     A_relay = np.pi * r_relay ** 2
 
-    return sting_offset, relay_offset, r_sting, r_relay, A_sting, A_relay
+    return sting_offset, relay_offset, r_sting, r_relay, A_sting, A_relay, beta, alpha, delta
 
 
 def get_radius(r_beam, A_pv, A_dish):

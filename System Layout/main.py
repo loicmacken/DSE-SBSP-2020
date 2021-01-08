@@ -93,7 +93,7 @@ for d_queen in DEPTHS:
         ANGLE = np.linspace(margin, margin + d_margin, 10) #range of angle margins for beta
         REFLECTOR_MASS = []# this list will collect the reflector configuration masses for a specific dish depth
         for angle in ANGLE:
-            o_s, o_r, r_s, r_r, A_s, A_r = arrange_sting(relay_offset, r_queen, r_beam, 1, gamma, rho, angle)
+            o_s, o_r, r_s, r_r, A_s, A_r, b, a, d = arrange_sting(relay_offset, r_queen, r_beam, 1, gamma, rho, angle)
 
             if r_r < r_queen:
                 extra = r_queen - np.sqrt(r_queen**2 - r_r**2)
@@ -131,10 +131,10 @@ Queen = parabola(r_queen, d_best) # create the big paraboloid
 Worker = parabola(r_beam, d_worker, up=0) # create the small paraboloid
 worker_offset = Queen.FP - Queen.d + Worker.FP - Worker.d # rim to rim distance beween queen and worker
 struct1 = truss(-r_queen, -r_beam, 0, worker_offset)  # 1 truss connecting queen and worker
-struct2 = truss(r_beam, r_queen, worker_offset, 0) # 1 other truss connecting queen and worker, (the fact that i create two is mostly just for plotting)
+struct2 = truss(r_beam, r_queen, worker_offset, 0) # 1 other truss connecting queen and worker, (the reason that i create two is mostly just for plotting)
 
 gamma, rho, margin = arrange_relay(offset_best, r_queen, d_best, r_beam, worker_offset, 1)
-o_s, o_r, r_s, r_r, A_s, A_r = arrange_sting(offset_best, r_queen, r_beam, 1, gamma, rho, margin_best)
+o_s, o_r, r_s, r_r, A_s, A_r, beta, alpha, delta = arrange_sting(offset_best, r_queen, r_beam, 1, gamma, rho, margin_best)
 extra = r_queen - np.sqrt(r_queen**2 - r_r**2)
 struct3 = truss(-1, 0, -d_best, -o_s)
 struct4 = truss(-(r_queen + o_r), -(r_queen-extra), 0, 0)
@@ -157,7 +157,7 @@ print("Relay radius: ", round(r_r, 2), "m")
 print("Sting area: ", round(A_s, 2), "m²")
 print("Relay area: ", round(A_r, 2), "m²")
 print("truss length: ", struct1.length,"m")
-
+print(np.degrees(gamma), np.degrees(rho), np.degrees(beta), np.degrees(alpha), np.degrees(delta))
 print("Total mass: ", round(mass, 2), "kg")
 
 print("\nParabola shape: y = {}*(1 - x²/{}²)\nfor x in [{},{}]".format(round(Queen.d,2), round(Queen.r,2), round(-Queen.r,2), round(Queen.r,2)))
