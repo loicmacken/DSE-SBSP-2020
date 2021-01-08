@@ -6,7 +6,7 @@ from matrices import *
 x, y, z are the global axes, ie the body reference system, where x is the axis around which the system rolls,
 y the axis around which it pitches and z is the axis around which it yaws
 
-u, v, w related to body axis of the flat mirrors, u perpendicular and facing outwards from the reflective surface,
+u, v, w related to body axis of the flat mirrors, u is perpendicular and facing outwards from the reflective surface,
 v is parallel to the body y-axis (due to connection design) and w is perpendicular to both, facing in the 
 positive direction of a rotation from u to v.
 
@@ -37,7 +37,7 @@ sti_ref= yrot * sting * wrot * vrot
 # # third rotation around local v (post) to direct the beam to the desired location
 # # alternatively you could do: yrot * zrot * vec * vrot, but this is impractical in reality due to the design of the three-axes rotational structure
 #
-# #a ray that started along the global x-axis now lies in the equatorila plane: check if (a X b) . c = 0
+# #a ray that started along the global x-axis now lies in the equatori plane: check if (a X b) . c = 0
 
 cp = np.cross(equ_plane[:,0].T,equ_plane[:,1].T)
 check = np.dot(cp, sti_ref[:,0])

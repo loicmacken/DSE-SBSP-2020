@@ -160,7 +160,7 @@ print("truss length: ", struct1.length,"m")
 print(np.degrees(gamma), np.degrees(rho), np.degrees(beta), np.degrees(alpha), np.degrees(delta))
 print("Total mass: ", round(mass, 2), "kg")
 
-print("\nParabola shape: y = {}*(1 - x²/{}²)\nfor x in [{},{}]".format(round(Queen.d,2), round(Queen.r,2), round(-Queen.r,2), round(Queen.r,2)))
+print("\nParabola shape: y = -{}*(1 - x²/{}²)\nfor x in [{},{}]".format(round(Queen.d,2), round(Queen.r,2), round(-Queen.r,2), round(Queen.r,2)))
 
 plt.plot(Queen.X, Queen.Y, 'b')
 plt.plot(Worker.X, Worker.Y + worker_offset, 'b')
