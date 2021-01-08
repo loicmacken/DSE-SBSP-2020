@@ -17,18 +17,17 @@ orientation of the equatorial wrt the ecliptic remains constant but the orientat
 has to propagate 360° over the course of a year.
 """
 
-ecl_plane = np.array([[1,0,0],[0,0,1]]).T
+ecl_plane = np.mat([[1,0,0],[0,0,1]]).T
 
-rot23 = rotx(23.44 * np.pi/180)
-equ_plane = rot23 * np.mat(ecl_plane) # corresponds to autumn
-
-print(equ_plane)
+ry = roty(-np.pi/4)
+rz = rotz(-23.44 * np.pi/180)
+equ_plane =  ry * rz * ecl_plane
 
 sting = np.mat([[1,0,0],[0,1,0],[0,0,1]]).T # sting reference system
 relay = roty(np.pi/2) * sting # relay reference system
 
 #sting rotation test
-yrot = roty(-np.pi/2)
+yrot = roty(-np.pi/4)
 wrot = rotz(-23.44 * np.pi/180)
 vrot = roty(np.pi/6)
 
@@ -39,18 +38,16 @@ sti_ref= yrot * sting * wrot * vrot
 #
 # #a ray that started along the global x-axis now lies in the equatori plane: check if (a X b) . c = 0
 
-cp = np.cross(equ_plane[:,0].T,equ_plane[:,1].T)
-check = np.dot(cp, sti_ref[:,0])
+check = check_in_plane(equ_plane, sti_ref[:,0])
 
-print(sti_ref, check)
+print("Sting:\n",sti_ref, check)
 
 # relay rotation test
+yrot = roty(np.pi/4)
 wrot = rotz(23.44 * np.pi/180)
-vrot = roty(np.pi/3)
+vrot = roty(0 * np.pi/3)
 
-rel_ref = relay * wrot * vrot
+rel_ref = yrot * relay * wrot * vrot
 
-cp = np.cross(equ_plane[:,0].T,equ_plane[:,1].T)
-check = np.dot(cp,rel_ref[:,0])
-
-print(rel_ref, check)
+check = check_in_plane(equ_plane, rel_ref[:,0])
+print("Relay:\n",rel_ref, check)
