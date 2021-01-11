@@ -34,15 +34,15 @@ alternatively you can change the number of steps in the iterations
 """
 
 # Mass estimates [kg] (as in order of magnitude is in the correct range)
-m_t = 1500  # mass of truss per m
+m_t = 450  # mass of truss per m
 m_m = 15  # mass of rigid mirror per m²
-m_f = 0.15  # mass of reflective foil per m²
-m_g = 75 # mass of mesh grid per m²
+m_f = 0.3  # mass of reflective foil per m²
+m_g = 45 # mass of mesh grid per m²
 
 #------------
 # USER INPUT
 #------------
-A_pv = 1.1*10**6 / (1362 * 0.27) # 5MW for bus power from pv cells
+A_pv = 1.1*10**6 / (1362 * 0.27) # 1.1 MW for bus power from pv cells with 0.27 efficiency
 r_beam = 25
 A_dish = (100*10**6 / (0.91 * 0.94**3 * 0.55 * 0.3)) / 1362 # 100 MW output from groundstation
 #________________
@@ -96,11 +96,11 @@ for d_queen in DEPTHS:
             o_s, o_r, r_s, r_r, A_s, A_r, b, a, d = arrange_sting(relay_offset, r_queen, r_beam, 1, gamma, rho, angle)
 
             if r_r < r_queen:
-                extra = r_queen - np.sqrt(r_queen**2 - r_r**2)
+                extra = r_queen - np.sqrt(r_queen**2 - 30**2) # 30 = ca. short radius relay
                 o_r = o_r + extra
                 #print(r_r, extra)
             # reflectors' (sting+relay) masses based on, area (with mirrors, radii and circumference (with trusses, for support), and offsets (with trusses)
-            reflector_mass = 2 * m_t * (o_s + o_r) + 2 * m_t * (r_r + r_s) + 2 * np.pi * (r_s + r_r) + m_m * (A_r + A_s)
+            reflector_mass = 2 * m_t * (o_s + o_r) + 2 * m_t * (r_r + r_s) + 0 * 2 * np.pi * (r_s + r_r) + m_m * (A_r + A_s)
             REFLECTOR_MASS.append(reflector_mass)
 
         a_i = REFLECTOR_MASS.index(min(REFLECTOR_MASS)) # find optimal margin angle based on minimum reflectors' masses
@@ -110,7 +110,7 @@ for d_queen in DEPTHS:
 
     w_i = MASS.index(min(MASS))
 
-    total_weight = min(MASS) + 0 * m_t * (Queen.length + Worker.length) + 4 * m_t * struct1.length\
+    total_weight = min(MASS) + 0 * m_t * (Queen.length + Worker.length) + 3 * m_t * struct1.length\
                    + (m_f + m_g) * Queen.A + (m_m + m_g) * Worker.A # total mass of the struct for this specific queen depth
 
     TOTAL_MASS.append(total_weight)

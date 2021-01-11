@@ -41,17 +41,17 @@ def arrange_sting(relay_offset, r_big, r_beam, margin, gamma, rho, beta_marg):
     alpha_max = max((np.pi - delta) / 2, (np.pi - rho + alpha) / 2)
 
     r_sting = r_beam / abs(np.cos(rho / 2))
-    A_sting = np.pi * r_sting ** 2
+    A_sting = np.pi * r_sting * (r_beam / np.cos(np.radians(0.5 * 23.44))) # area of an ellipse, cosine factor for 23.44° equatorial tilt
 
     r_relay = r_beam / abs(np.cos(alpha_max))
-    A_relay = np.pi * r_relay ** 2
+    A_relay = np.pi * r_relay * (r_beam / np.cos(np.radians(0.5 * 23.44))) # area of an ellipse, cosine factor for 23.44° equatorial tilt
 
     return sting_offset, relay_offset, r_sting, r_relay, A_sting, A_relay, beta, alpha, delta
 
 
 def get_radius(r_beam, A_pv, A_dish):
-    """apperture will be a disk-shaped hole in the center of the main dish with radius r_beam.
-    pv ring is like a flat Saturn disk around the apperture.
+    """aperture will be a disk-shaped hole in the center of the main dish with radius r_beam.
+    pv ring is like a flat Saturn disk around the aperture.
     we need to substract the radii from the main dish radius
 
     we have: A_pv = pi*(r_pv + r_beam)² - pi*r_beam²

@@ -19,7 +19,7 @@ has to propagate 360° over the course of a year.
 
 ecl_plane = np.mat([[1,0,0],[0,0,1]]).T
 
-ry = roty(-np.pi/4)
+ry = roty(-np.pi/2)
 rz = rotz(-23.44 * np.pi/180)
 equ_plane =  ry * rz * ecl_plane
 
@@ -27,7 +27,7 @@ sting = np.mat([[1,0,0],[0,1,0],[0,0,1]]).T # sting reference system
 relay = roty(np.pi/2) * sting # relay reference system
 
 #sting rotation test
-yrot = roty(-np.pi/4)
+yrot = roty(-np.pi/2)
 wrot = rotz(-23.44 * np.pi/180)
 vrot = roty(np.pi/6)
 
@@ -43,11 +43,17 @@ check = check_in_plane(equ_plane, sti_ref[:,0])
 print("Sting:\n",sti_ref, check)
 
 # relay rotation test
-yrot = roty(np.pi/4)
+yrot = roty(0*np.pi/4)
 wrot = rotz(23.44 * np.pi/180)
-vrot = roty(0 * np.pi/3)
+vrot = roty(np.pi/3)
 
 rel_ref = yrot * relay * wrot * vrot
 
 check = check_in_plane(equ_plane, rel_ref[:,0])
-print("Relay:\n",rel_ref, check)
+print("Relay:\n", rel_ref, check)
+
+#-----------------------------------------
+# test with 2 rotations: 1 global, 1 local
+#-----------------------------------------
+
+

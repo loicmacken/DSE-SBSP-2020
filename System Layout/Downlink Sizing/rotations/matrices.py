@@ -32,6 +32,9 @@ def unit(vec):
     unitvec = np.array(vec) / np.sqrt(sum(np.array(vec) ** 2))
     return unitvec
 
+def magnitude(vec):
+    norm = np.sqrt(sum(np.array(vec)**2))
+    return norm
 
 def check_in_plane(plane, vec):
     cp = np.cross(plane[:, 0].T, plane[:, 1].T)
