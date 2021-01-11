@@ -15,8 +15,8 @@ alpha = 64.79
 delta = alpha - beta
 
 # define downtime
-downtime_yr = 0.1 # days/yr
-downtime_day = (0.1/365) * 24 * 60 * 60 # sec/day
+downtime_yr = 0.15 # days/yr
+downtime_day = (downtime_yr/365) * 24 * 60 * 60 # sec/day
 
 #print(downtime_day)
 
@@ -38,8 +38,8 @@ angles = np.array([turn1, turn2, turn3, turn4])
 # give each turn a turning time proportional to the required turn
 total_turn = sum(angles)
 times = 2/3 * downtime_day * (angles/total_turn)**(2/3)
-#print(times)
-#print(sum(times), downtime_day)
+print(times)
+print(sum(times), downtime_day)
 
 # angular accelerations, aim to make them the same
 accs = angles * (2/times)**2
