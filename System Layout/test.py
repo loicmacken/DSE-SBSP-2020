@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 """
 radius = 10
 rays = 8
@@ -151,5 +152,78 @@ plt.show()"""
 """self.intersect_angled_x = self.starting_location_x - np.tan(self.divergence + self.parabola1_angle) * self.intersect_unangled_distance_y \
                                      * (np.tan(self.intersect_unangled_local_gradient) / (np.tan(self.intersect_unangled_local_gradient) + np.tan(self.divergence + self.parabola1_angle)) )#calculate the x coordinate of the angled beam through some geometry calculations-> dist=wtana/(tana+tanb)
         self.intersect_angled_index = min(range(len(self.X1)), key = lambda i: abs(self.X1[i]-self.intersect_angled_x)) #same story as other index but now for angled intersect"""
+"""
+class Parabolas:
+    def __init__(self, parabola1_radius, parabola2_radius, parabola1_depth, parabola2_offset,step):
+        self.parabola1_radius = parabola1_radius
+        self.parabola2_radius = parabola2_radius
+        self.parabola1_depth = parabola1_depth
+        self.parabola2_depth = self.parabola2_radius * (self.parabola1_depth / self.parabola1_radius)
+        self.parabola2_offset = parabola2_offset
+        self.step = step
 
-print(-100*5.589399426239643 + -149.7345831829127 )
+    def parab_big(self):
+        self.X1 = np.arange(-self.parabola1_radius, self.parabola1_radius + self.step, self.step)
+        self.Y1 = (-1) * self.parabola1_depth * (1 - self.X1 ** 2 / self.parabola1_radius ** 2)
+        print("done with parabola")
+        self.length = np.sqrt(self.parabola1_radius ** 2 + 4 * self.parabola1_depth ** 2) \
+                      + self.parabola1_radius ** 2 * np.arcsinh(2 * self.parabola1_depth / self.parabola1_radius) / (2 * self.parabola1_depth)
+        self.A = np.pi * self.parabola1_radius / (6 * self.parabola1_depth ** 2) * ((self.parabola1_radius ** 2 + 4 * self.parabola1_depth ** 2) ** (3 / 2) - self.parabola1_radius ** 3)
+        return(self.X1, self.Y1)
+
+    def parab_small(self):
+        self.X2 = np.arange(-self.parabola2_radius, self.parabola2_radius + self.step, self.step)
+        self.Y2 = self.parabola2_depth * (1 - self.X2 ** 2 / self.parabola2_radius ** 2)
+        self.Y2 = self.Y2 + self.parabola2_offset
+        return(self.X2,self.Y2)
+
+y = Parabolas(434,25,71,622.81, 0.001)
+x1,y1 = y.parab_big()
+x2,y2 = y.parab_small()
+blocked = 25+14.71
+h = min(range(len(x1)), key = lambda i: abs(x1[i]-blocked))
+print(x1[h],y1[h])"""
+
+class Parabolas:
+    def __init__(self, parabola1_radius, parabola2_radius, parabola1_depth, parabola2_offset,step):
+        self.parabola1_radius = parabola1_radius
+        self.parabola2_radius = parabola2_radius
+        self.parabola1_depth = parabola1_depth
+        self.parabola2_depth = self.parabola2_radius * (self.parabola1_depth / self.parabola1_radius)
+        self.parabola2_offset = parabola2_offset
+        self.pv_width = 14.71
+        self.step = step
+
+    def parab_big(self):
+        self.X1 = np.arange(-self.parabola1_radius, self.parabola1_radius + self.step, self.step)
+        self.Y1 = (-1) * self.parabola1_depth * (1 - self.X1 ** 2 / self.parabola1_radius ** 2)
+        self.length = np.sqrt(self.parabola1_radius ** 2 + 4 * self.parabola1_depth ** 2) \
+                      + self.parabola1_radius ** 2 * np.arcsinh(2 * self.parabola1_depth / self.parabola1_radius) / (2 * self.parabola1_depth)
+        self.A = np.pi * self.parabola1_radius / (6 * self.parabola1_depth ** 2) * ((self.parabola1_radius ** 2 + 4 * self.parabola1_depth ** 2) ** (3 / 2) - self.parabola1_radius ** 3)
+        return(self.X1, self.Y1)
+
+    def parab_small(self):
+        self.X2 = np.arange(-self.parabola2_radius, self.parabola2_radius + self.step, self.step)
+        self.Y2 = self.parabola2_depth * (1 - self.X2 ** 2 / self.parabola2_radius ** 2)
+        self.Y2 = self.Y2 + self.parabola2_offset
+        return(self.X2,self.Y2)
+    
+    def height_aperture(self):
+        self.radius_flat = self.parabola2_radius + self.pv_width
+        self.x = self.parab_big()[0]
+        print(len(self.x))
+        self.height_index = min(range(len(self.x)), key = lambda i: abs(self.x[i]-self.radius_flat))
+        self.height = self.parab_big()[1][self.height_index]
+        return(self.height)
+y = Parabolas(434,25,71,622.81, 0.001)
+x1,y1 = y.parab_big()
+x2,y2 = y.parab_small()
+height = y.height_aperture()
+x = [(-236.85500000466186, -49.85323184325536), (-1.215240385177026, 588.9295793606282), (10.992297920908012, 626.1092158023899), (58.18951410045132, -70.40560018774643)]
+xlist = list(list(zip(*x))[0])
+ylist = list(list(zip(*x))[1])
+plt.plot(xlist,ylist)
+plt.plot(x1,y1)
+plt.annotate(("Ray","hello"),(0,0) )
+plt.plot(x2,y2)
+plt.show()

@@ -13,6 +13,7 @@ class Parabola:
         self.n_steps = n_steps
         self.x = np.linspace(start, self.radius, n_steps)
         self.y = np.zeros(len(self.x))
+        self.angles = np.zeros(len(self.x) - 1)
         self.y[0] = self.func(self.x[0], self.depth, self.radius)
 
         self.step = 1
@@ -66,23 +67,35 @@ class Parabola:
         s = np.divide((N - cumarc[tbins]), chordlen[tbins - 1])
         pt = pxy[tbins, :] + np.multiply((pxy[tbins, :] - pxy[tbins - 1, :]), (np.vstack([s] * 2)).T)
 
+        self.x = np.zeros(len(pt))
+        self.y = np.zeros(len(pt))
+
+        for i, point in enumerate(pt):
+            self.x[i] = point[0]
+            self.y[i] = point[1]
+
         return pt
+
+    def calc_angles(self):
+        points = list(zip(self.x, self.y))
+        for i, point in enumerate(points):
+            if i != len(points) - 1:
+                unit1 = point / np.linalg.norm(point)
+                unit2 = points[i + 1] / np.linalg.norm(points[i + 1])
+                angle = np.arccos(np.dot(unit1, unit2)) * 180.0 / np.pi
+                self.angles[i] = angle
+        return
 
 
 if __name__ == '__main__':
-    p = Parabola(434.0, 71.32, 13.35, 40)
+    p = Parabola(434.0, 84.38, 25 + 14.71, 40)
 
     pt = p.interpcurve()
-    x = np.zeros(len(pt))
-    y = np.zeros(len(pt))
-    for i, point in enumerate(pt):
-        x[i] = point[0]
-        y[i] = point[1]
 
-    first_seg = np.linalg.norm(np.array(x[1], y[1])) - np.linalg.norm(np.array(x[0], y[0]))
-    last_seg = np.linalg.norm(np.array(x[-2], y[-2])) - np.linalg.norm(np.array(x[-3], y[-3]))
-    print(first_seg)
-    print(last_seg)
-    plt.plot(x, y, 'bo')
+    p.calc_angles()
+
+    print(p.angles)
+
+    plt.plot(p.x, p.y, 'bo', p.x, p.y, 'k')
 
     plt.show()
