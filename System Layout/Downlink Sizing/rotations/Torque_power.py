@@ -8,10 +8,10 @@ I_relayx = 0.25 * 15 * np.pi * 231.19 * 26**3 # ellipse around long axis
 #print(I_stingy / 10 ** 6, I_relayy / 10 ** 6)
 
 # import important angles in degrees for readability
-gamma = 49.13
-rho = 95.52
-beta = 48.13
-alpha = 64.79
+gamma = 49.06
+rho = 95.51
+beta = 48.06
+alpha = 64.74
 delta = alpha - beta
 
 # define downtime

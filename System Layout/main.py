@@ -23,11 +23,6 @@ sting offset is measured from Queen rim to center sting (reflector)
 relay   "    "      "       "   "   "   "   "    relay
 so the angles are measured consistent with the drawings in notion, but the distances are not (or not always)
 
-Mass Estimations:
-Reflectors (sting+relay): 1 area + 4 radial trusses + 1 circumferential truss + 2 connecting trusses to main struct
-Queen+worker: 1 area + 4 "radial" trusses following the shape of the curve + 4 connecting trusses
-all much like Chris's drawing
-
 Note:
 The code is kinda inefficient and takes around 20 secs, so be patient
 alternatively you can change the number of steps in the iterations
@@ -37,14 +32,14 @@ alternatively you can change the number of steps in the iterations
 m_t = 450  # mass of truss per m
 m_m = 15  # mass of rigid mirror per m²
 m_f = 0.3  # mass of reflective foil per m²
-m_g = 45 # mass of mesh grid per m²
+m_g = 30 # mass of mesh grid per m²
 
 #------------
 # USER INPUT
 #------------
-A_pv = 1.1*10**6 / (1362 * 0.27) # 1.1 MW for bus power from pv cells with 0.27 efficiency
+A_pv = 0.5*10**6 / (1362 * 0.27) # 1.75 MW for bus power from pv cells with 0.27 efficiency
 r_beam = 25
-A_dish = (100*10**6 / (0.91 * 0.94**3 * 0.55 * 0.3)) / 1362 # 100 MW output from groundstation
+A_dish = (100*10**6 / (0.91 * 0.94**3 * 0.55 * 0.273)) / 1362 # 100 MW output from groundstation
 #________________
 #----------------
 
@@ -76,7 +71,7 @@ for d_queen in DEPTHS:
     x = np.linspace(d_queen, d_queen + 750, 750)
 
     for relay_offset in RO:
-        gamma, rho, margin = arrange_relay(relay_offset, r_queen, d_queen, r_beam, worker_offset, 1)
+        gamma, rho, margin = arrange_relay(relay_offset, r_queen, d_queen, r_beam, worker_offset, 5)
         #margin here is a user input: how much overlap of angles do you want when mitigating blindspots?
         #not to be confused with beta margin, wich is the overlap between beta and gamma, and will show up as 'angle' in the code below
 
@@ -93,14 +88,14 @@ for d_queen in DEPTHS:
         ANGLE = np.linspace(margin, margin + d_margin, 10) #range of angle margins for beta
         REFLECTOR_MASS = []# this list will collect the reflector configuration masses for a specific dish depth
         for angle in ANGLE:
-            o_s, o_r, r_s, r_r, A_s, A_r, b, a, d = arrange_sting(relay_offset, r_queen, r_beam, 1, gamma, rho, angle)
+            o_s, o_r, r_s, r_r, A_s, A_r, b, a, d = arrange_sting(relay_offset, r_queen, r_beam, margin, gamma, rho, angle)
 
             if r_r < r_queen:
                 extra = r_queen - np.sqrt(r_queen**2 - 30**2) # 30 = ca. short radius relay
                 o_r = o_r + extra
                 #print(r_r, extra)
-            # reflectors' (sting+relay) masses based on, area (with mirrors, radii and circumference (with trusses, for support), and offsets (with trusses)
-            reflector_mass = 2 * m_t * (o_s + o_r) + 2 * m_t * (r_r + r_s) + 0 * 2 * np.pi * (r_s + r_r) + m_m * (A_r + A_s)
+            # reflectors' (sting+relay) masses based on, area (with mirrors, radii (with trusses, for support), and offsets (with trusses)
+            reflector_mass = 2 * m_t * ((o_s - d_queen) + o_r) + 0 * 2 * m_t * (r_r + r_s) + m_m * (A_r + A_s)
             REFLECTOR_MASS.append(reflector_mass)
 
         a_i = REFLECTOR_MASS.index(min(REFLECTOR_MASS)) # find optimal margin angle based on minimum reflectors' masses
@@ -156,7 +151,8 @@ print("Relay offset: ", round(o_r, 2), "m")
 print("Relay radius: ", round(r_r, 2), "m")
 print("Sting area: ", round(A_s, 2), "m²")
 print("Relay area: ", round(A_r, 2), "m²")
-print("truss length: ", struct1.length,"m")
+print("Q-W truss length: ", struct1.length,"m")
+print("Q-R truss length: ", o_r+extra,"m")
 print(np.degrees(gamma), np.degrees(rho), np.degrees(beta), np.degrees(alpha), np.degrees(delta))
 print("Total mass: ", round(mass, 2), "kg")
 
