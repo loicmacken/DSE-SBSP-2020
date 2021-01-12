@@ -21,28 +21,34 @@ def angle(n,angle1):
     return angle_prev + angle_now
 def rcirclenproj(n, rsegmnent, alpha):
     if n>= 1:
-        previous_r = rcirclenproj((n-1),segments[n-1], list_of_angles[n-1])
+        previous_r = rcirclenproj((n-1),segments[n-1], list_of_angles[n])
     else:
-        previous_r = 49
+        previous_r = 39.71
     total = previous_r + segments[n]*cos(list_of_angles[n])
     return total
 def lcirclen(n, rcirclen):
     return 2*pi*rcirclen
 
-p = Parabola(434.0, 84.38, 25 + 14.71, 40)
-pt = p.interpcurve()
+p = Parabola(434, 84.38, 25 + 14.71, 20)
+#pt = p.interpcurve()
 p.calc_angles()
-#print(p.angles)
-list_of_angles = []
-for n in range(39):
-    list_of_angles.append(angle(n,p.angles))
-#print(list_of_angles)
+print(p.angles)
+list_of_angles = p.angles
 
 
 segments = p.get_segments()
 segments = segments['lengths']
+print(segments)
 
 radius = []
-for n in range(39):
+for n in range(19):
     radius.append(rcirclenproj(n, segments, list_of_angles))
 print(radius)
+
+circum = []
+for i,r in enumerate(radius):
+    circum.append(lcirclen(i,r))
+print(circum)
+
+circum_divided = 0
+print(sum(circum_divided))
