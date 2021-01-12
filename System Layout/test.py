@@ -1,6 +1,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
 """
+#self.intersect_angled_gradient = (np.arctan( (self.Y1[self.intersect_angled_index] \
+                                                    - self.Y1[self.intersect_angled_index - 1]) / (self.X1[self.intersect_angled_index] - self.X1[self.intersect_angled_index - 1]) )) #same thing as unangled gradient
+        self.intersect_angled_angle = self.divergence + 2 * (self.intersect_angled_gradient - (self.divergence))
+if (self.ray_amount % 2) == 0:
+            self.rays_left = self.ray_amount / 2
+            self.rays_right = self.ray_amount / 2
+        else:
+            self.rays_left = (self.ray_amount + 1) / 2
+            self.rays_right = (self.ray_amount - 1) / 2
+        
+for self.j in np.arange(self.parabola1_radius - self.step_size_right, self.parabola1_radius-self.intake_right, -self.step_size_right):
+            self.starting_locations_right.append(self.j)
+                    #self.step_size_right = self.intake_right / (self.rays_right + 1)
 radius = 10
 rays = 8
 steps = radius/(rays+1)
@@ -211,19 +224,36 @@ class Parabolas:
     def height_aperture(self):
         self.radius_flat = self.parabola2_radius + self.pv_width
         self.x = self.parab_big()[0]
-        print(len(self.x))
+        #print(len(self.x))
         self.height_index = min(range(len(self.x)), key = lambda i: abs(self.x[i]-self.radius_flat))
         self.height = self.parab_big()[1][self.height_index]
         return(self.height)
-y = Parabolas(434,25,71,622.81, 0.001)
+y = Parabolas(434,25,71.32,622.81, 0.001)
 x1,y1 = y.parab_big()
 x2,y2 = y.parab_small()
 height = y.height_aperture()
 x = [(-236.85500000466186, -49.85323184325536), (-1.215240385177026, 588.9295793606282), (10.992297920908012, 626.1092158023899), (58.18951410045132, -70.40560018774643)]
 xlist = list(list(zip(*x))[0])
 ylist = list(list(zip(*x))[1])
+#print(len(x2))
+startx = -100
+refx =  min(range(len(x1)), key = lambda i: abs(x1[i]-startx))
+vector1 = np.array([0,y1[refx]])
+grad = -(-2 * 71.32/(434**2)) * -100
+vector2 = np.array([1,grad])
+vector2n = np.array([-grad, 1])
+vector3 = vector1 - 2*vector2n*np.dot(vector1,vector2n)
+V = np.array([vector1, vector2, vector3])
+origin = (x1[refx],y1[refx]) # origin point
+plt.quiver(*origin, V[:,0], V[:,1], color=['r','b','g'], scale=21)
+plt.show()
+"""
 plt.plot(xlist,ylist)
 plt.plot(x1,y1)
 plt.annotate(("Ray","hello"),(0,0) )
 plt.plot(x2,y2)
-plt.show()
+plt.show()"""
+"""
+x = np.array([1,2])
+y = np.array([-2,1])
+print(np.dot(x,y))"""
