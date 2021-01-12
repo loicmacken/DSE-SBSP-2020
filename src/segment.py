@@ -14,13 +14,13 @@ class Parabola:
         self.x = np.linspace(start, self.radius, n_steps)
         self.y = np.zeros(len(self.x))
         self.angles = np.zeros(len(self.x) - 1)
-        self.y[0] = self.func(self.x[0], self.depth, self.radius)
+        self.y[0] = self.func(self.x[0])
 
         self.step = 1
         self.discretize()
 
-    def func(self, x, depth, radius):
-        return depth * (1 - x ** 2 / radius ** 2)
+    def func(self, x):
+        return self.depth * (1 - x ** 2 / self.radius ** 2)
 
     def discretize(self):
         for seg in range(self.n_steps):
@@ -76,25 +76,65 @@ class Parabola:
 
         return pt
 
+    def segment_curve(self):
+        for i, x in enumerate(self.x):
+            self.y[i] = self.func(x)
+
     def calc_angles(self):
         points = list(zip(self.x, self.y))
-        for i, point in enumerate(points):
-            if i != len(points) - 1:
-                unit1 = point / np.linalg.norm(point)
-                unit2 = points[i + 1] / np.linalg.norm(points[i + 1])
-                angle = np.arccos(np.dot(unit1, unit2)) * 180.0 / np.pi
-                self.angles[i] = angle
+        for i in range(len(points) - 1):
+            # seg1 = np.linalg.norm(points[i + 1]) - np.linalg.norm(points[i])
+            seg1x = points[i+1][0] - points[i][0]
+            seg1y = points[i+1][1] - points[i][1]
+            seg1 = m.sqrt(seg1x**2 + seg1y**2)
+            angle = m.acos(seg1x/seg1)
+
+            #
+            # unit1 = points[i] / np.linalg.norm(points[i])
+            # unit2 = points[i + 1] / np.linalg.norm(points[i + 1])
+            # angle = np.arccos(np.dot(unit1, unit2))
+            self.angles[i] = angle
         return
+
+    def get_segments(self):
+        segments = {'coords': [], 'lengths':[]}
+        points = list(zip(self.x, self.y))
+        for i in range(len(points) - 1):
+            segments['coords'].append((points[i], points[i+1]))
+            seg1x = points[i+1][0] - points[i][0]
+            seg1y = points[i+1][1] - points[i][1]
+            seg_length = m.sqrt(seg1x**2 + seg1y**2)
+            segments['lengths'].append(seg_length)
+
+        return segments
+
 
 
 if __name__ == '__main__':
-    p = Parabola(434.0, 84.38, 25 + 14.71, 40)
+    p = Parabola(434.0, 84.38, 25 + 14.71, 20)
 
-    pt = p.interpcurve()
+    p.segment_curve()
+
+    # pt = p.interpcurve()
 
     p.calc_angles()
 
+    segments = p.get_segments()
+
+    # angles = np.cumsum(p.angles)
+    # print(len(angles))
+    print(len(segments['lengths']))
+    radius = 0.0
+    i = 0
+    for angle in p.angles:
+        radius += m.cos(angle) * segments['lengths'][i]
+        i += 1
+
+    radius += 25 + 14.71
+    print(radius)
+
     print(p.angles)
+    print(segments['lengths'])
 
     plt.plot(p.x, p.y, 'bo', p.x, p.y, 'k')
 
