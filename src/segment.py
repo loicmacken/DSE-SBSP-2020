@@ -82,7 +82,7 @@ class Parabola:
             if i != len(points) - 1:
                 unit1 = point / np.linalg.norm(point)
                 unit2 = points[i + 1] / np.linalg.norm(points[i + 1])
-                angle = np.arccos(np.dot(unit1, unit2)) * 180.0 / np.pi
+                angle = np.arccos(np.dot(unit1, unit2))
                 self.angles[i] = angle
         return
 
