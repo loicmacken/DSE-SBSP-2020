@@ -86,6 +86,16 @@ class Parabola:
                 self.angles[i] = angle
         return
 
+    def get_segments(self):
+        segments = {'coords': [], 'lengths':[]}
+        points = list(zip(self.x, self.y))
+        for i in range(len(points) - 1):
+            segments['coords'].append((points[i], points[i+1]))
+            segments['lengths'].append(np.linalg.norm(points[i+1]) - np.linalg.norm(points[i]))
+
+        return segments
+
+
 
 if __name__ == '__main__':
     p = Parabola(434.0, 84.38, 25 + 14.71, 40)
@@ -94,7 +104,10 @@ if __name__ == '__main__':
 
     p.calc_angles()
 
+    segments = p.get_segments()
+
     print(p.angles)
+    print(segments['lengths'])
 
     plt.plot(p.x, p.y, 'bo', p.x, p.y, 'k')
 
