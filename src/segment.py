@@ -14,13 +14,13 @@ class Parabola:
         self.x = np.linspace(start, self.radius, n_steps)
         self.y = np.zeros(len(self.x))
         self.angles = np.zeros(len(self.x) - 1)
-        self.y[0] = self.func(self.x[0], self.depth, self.radius)
+        self.y[0] = self.func(self.x[0])
 
         self.step = 1
         self.discretize()
 
-    def func(self, x, depth, radius):
-        return depth * (1 - x ** 2 / radius ** 2)
+    def func(self, x):
+        return self.depth * (1 - x ** 2 / self.radius ** 2)
 
     def discretize(self):
         for seg in range(self.n_steps):
@@ -76,6 +76,10 @@ class Parabola:
 
         return pt
 
+    def segment_curve(self):
+        for i, x in enumerate(self.x):
+            self.y[i] = self.func(x)
+
     def calc_angles(self):
         points = list(zip(self.x, self.y))
         for i, point in enumerate(points):
@@ -100,11 +104,24 @@ class Parabola:
 if __name__ == '__main__':
     p = Parabola(434.0, 84.38, 25 + 14.71, 40)
 
-    pt = p.interpcurve()
+    p.segment_curve()
+
+    # pt = p.interpcurve()
 
     p.calc_angles()
 
     segments = p.get_segments()
+
+    angles = np.cumsum(p.angles)
+    print(len(angles))
+    print(len(segments['lengths']))
+    radius = 0.0
+    i = 0
+    for angle in angles:
+        radius += m.cos(angle) * segments['lengths'][i]
+        i += 1
+
+    print(radius+25+14.71)
 
     print(p.angles)
     print(segments['lengths'])
