@@ -156,22 +156,29 @@ total_cost.append(thermal_heating.cost_until_launch(40+16)*1.2)
 #wiring
 #solar panels
 
-def cost_of_structures():
-    pass
+#Astrophysics section
+#fuel for transfers
+transfer_fuel = parts()
+transfer_fuel.part_cost(10000000, 5000, 0, 52000)
+transfer_fuel.testing()
+total_cost.append(transfer_fuel.cost_until_launch(1)*1.2)
 
-def cost_of_astro():
-    pass
+#structures costs
+#Trusses
+#mirrors
+    
 
-def cost_of_powerdl():
-    pass
+#power downlink
 
-def cost_of_ass():
-    pass
+
+
+#cost of assembly 
+#robots
+
     
     
     
-def final_pre_launch():
-    pass
+
 
     
     
