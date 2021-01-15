@@ -17,6 +17,7 @@ class parts:
         self.name = name
         self.status = 'In-House'
         self.import_tax = 'None'
+        
     def set_value(self, value, EU):
         self.value = value
         self.EU = EU
@@ -160,7 +161,6 @@ total_cost.append(adcs_tank.cost_until_launch(16)*1.2)
 adcs_tank.__str__()
 
 
-
 #C&DH
 #computer 
 computer = parts('On-Board computer')
@@ -172,7 +172,16 @@ rd_cost.append(computer.testing())
 cost_of_parts.append(computer.set_value(7500, 1))
 total_cost.append(computer.cost_until_launch(1)*1.2)
 computer.__str__()
-    
+#antennae
+antenna = parts('Antenna')
+antenna.set_value(2000, 1)
+antenna.transport_cost(50, by_truck_high=615.52)
+cost_of_transport.append(antenna.transport_cost(20, by_truck_high=1214))
+antenna.testing()
+rd_cost.append(antenna.testing())
+cost_of_parts.append(antenna.set_value(2000, 1)*3)
+total_cost.append(antenna.cost_until_launch(3)*1.2)
+antenna.__str__()
     
 
 #Thermal parts
@@ -280,10 +289,50 @@ transfer_fuel.__str__()
 
 #structures & downlink costs
 #Trusses
+truss = parts('Truss-structures')
+truss.part_cost(3.2*2820643, 2.5*2820643, 0.5*2820643, 90*52000 )
+truss.testing()
+rd_cost.append(truss.testing())
+rd_cost.append(truss.development_costs)
+cost_of_manufacturing.append(truss.part_costs)
+total_cost.append(truss.cost_until_launch(1)*1.2)
+truss.__str__()
 #Queen - needs to be made twice in total
+queen = parts("Queen's 'Mirrors")
+queen.part_cost(3.2*8555862.789, 2.5*8555862.789, 0.5*8555862.789, 20*52000 )
+queen.testing()
+rd_cost.append(queen.testing())
+rd_cost.append(queen.development_costs)
+cost_of_manufacturing.append(queen.part_costs)
+total_cost.append(queen.cost_until_launch(1)*1.2)
+queen.__str__()
 #worker - needs to be made twice in total
+worker = parts("Worker's 'Mirrors")
+worker.part_cost(3.2*30509.1, 6.5*30509.1, 30509.1, 5*52000 )
+worker.testing()
+rd_cost.append(worker.testing())
+rd_cost.append(worker.development_costs)
+cost_of_manufacturing.append(worker.part_costs)
+total_cost.append(worker.cost_until_launch(1)*1.2)
+worker.__str__()
 #stinger - needs to be made twice in total
+stinger = parts("Stinger's 'Mirrors")
+stinger.part_cost(3.2*45614.4, 6.5*45614.4, 45614.4, 5*52000 )
+stinger.testing()
+rd_cost.append(stinger.testing())
+rd_cost.append(stinger.development_costs)
+cost_of_manufacturing.append(stinger.part_costs)
+total_cost.append(stinger.cost_until_launch(1)*1.2)
+stinger.__str__()
 #relay - needs to be made twice in total
+relay = parts("Relay's 'Mirrors")
+relay.part_cost(1.6*272956.95, 3.3*272956.95, 0.25*272956.95, 5*52000 )
+relay.testing()
+rd_cost.append(relay.testing())
+rd_cost.append(relay.development_costs)
+cost_of_manufacturing.append(relay.part_costs)
+total_cost.append(relay.cost_until_launch(1)*1.2)
+relay.__str__()
 
     
 
