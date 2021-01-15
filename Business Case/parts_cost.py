@@ -1,6 +1,13 @@
 # new model to estimate the cost for a part
-
+import matplotlib.pyplot as plt
 import numpy as np
+
+
+def chartify(num, tot):
+    angle = num/tot * 360
+    return angle
+
+
 
 class parts:
     
@@ -15,7 +22,8 @@ class parts:
             self.value = value #add import taxes
             self.import_taxes = value*0.064
             self.transport.append(self.import_taxes)
-            
+        return self.value
+    
     def transport_cost(self, mass, by_air=0, by_truck_low=0, by_truck_high=0, by_train=0, by_ship_small=0, by_ship_medium=0, by_ship_large=0):     
         self.mass = mass
         air = 0.18/1000
@@ -35,15 +43,19 @@ class parts:
         cost_breakdown.append(mass*ship_medium*by_ship_medium)
         cost_breakdown.append(mass*ship_large*by_ship_large)
         self.transport.append(sum(cost_breakdown))
+        return sum(cost_breakdown)
     
     def part_cost(self, material_cost, machining_cost, development_cost, labour):
-        self.development.append(development_cost) 
+        self.part_costs = material_cost + machining_cost
+        self.development.append(development_cost)
+        self.development_costs = development_cost
         self.value = material_cost + machining_cost + labour
         self.EU = 0
         
-    def testing(self):
-        self.testing_cost = self.value*0.03 + sum(self.development)*0.3
+    def testing(self, factor=1):
+        self.testing_cost = (self.value*0.03 + sum(self.development)*0.3)*factor
         self.development.append(self.testing_cost)
+        return self.testing_cost
 
     def cost_until_launch(self, units):
         trans = sum(self.transport)
@@ -53,23 +65,44 @@ class parts:
         
     
     
+####global_variables#####
+launches = 250
+years = 25
 
-
+   
+    
+    
+    
+    
     
 #Propulsionssss
 
 
 total_cost = []
+total_mass = []
+
+rd_cost = [] #done
+cost_of_parts = [] #done
+cost_of_transport = [] #done
+cost_of_manufacturing = []
+cost_of_launches = [] #done
+
 #raptor engines SpaceX Hawthorne US of A
 raptor_engine = parts()        
 raptor_engine.set_value(1500000.,0)
 raptor_engine.transport_cost(1500, by_truck_high=50.11, by_ship_medium=14900) #bringing from US to Airbus
+cost_of_transport.append(40*raptor_engine.transport_cost(1500, by_truck_high=50.11, by_ship_medium=14900))
 raptor_engine.testing()
+rd_cost.append(raptor_engine.testing())
+cost_of_parts.append(raptor_engine.set_value(1500000.,0)*40)
 total_cost.append(raptor_engine.cost_until_launch(40)*1.2)
 #propellant tank made in house
 prop_tank = parts()
 prop_tank.part_cost(80000, 100000, 2000000/40, 260000)
 prop_tank.testing()
+rd_cost.append(prop_tank.testing())
+rd_cost.append(prop_tank.development_costs)
+cost_of_manufacturing.append(prop_tank.part_costs*40)
 total_cost.append(prop_tank.cost_until_launch(40)*1.2)
  
 #ADCS parts
@@ -77,30 +110,45 @@ total_cost.append(prop_tank.cost_until_launch(40)*1.2)
 sun_sensor = parts()
 sun_sensor.set_value(12000.,1)
 sun_sensor.transport_cost(mass=4., by_truck_high=20.57)
+cost_of_transport.append(2*sun_sensor.transport_cost(mass=4., by_truck_high=20.57))
 sun_sensor.testing()
+rd_cost.append(sun_sensor.testing())
+cost_of_parts.append(sun_sensor.set_value(12000.,1)*2)
 total_cost.append(sun_sensor.cost_until_launch(2)*1.2)
 #star tracker Sagitta Belgium Antwerp Area
 star_tracker = parts()
 star_tracker.set_value(45000,1)
 star_tracker.transport_cost(4, by_truck_high=106.2)
+cost_of_transport.append(2*star_tracker.transport_cost(4, by_truck_high=106.2))
 star_tracker.testing()
+rd_cost.append(star_tracker.testing())
+cost_of_parts.append(star_tracker.set_value(45000,1)*2)
 total_cost.append(star_tracker.cost_until_launch(2)*1.2)
 #imu 
 imu = parts()
 imu.set_value(1700, 1)
 imu.transport_cost(4, by_truck_high=1214)
+cost_of_transport.append(2*imu.transport_cost(4, by_truck_high=1214))
 imu.testing()
+rd_cost.append(imu.testing())
+cost_of_parts.append(imu.set_value(1700, 1)*2)
 total_cost.append(imu.cost_until_launch(2)*1.2)
 #thrusters Ariane Group GmbH Germany
 thruster = parts()
 thruster.set_value(10000,1)
 thruster.transport_cost(4, by_truck_high=683.38)
+cost_of_transport.append(16*thruster.transport_cost(4, by_truck_high=683.38))
 thruster.testing()
+rd_cost.append(thruster.testing())
+cost_of_parts.append(thruster.set_value(10000,1)*16)
 total_cost.append(thruster.cost_until_launch(16)*1.2)
 #propellant (made in house)
 adcs_tank = parts()
 adcs_tank.part_cost(8000, 10000, 50000/16, 26000)
 adcs_tank.testing()
+rd_cost.append(adcs_tank.testing())
+rd_cost.append(adcs_tank.development_costs*16)
+cost_of_manufacturing.append(adcs_tank.part_costs*16)
 total_cost.append(adcs_tank.cost_until_launch(16)*1.2)
 
 
@@ -110,7 +158,10 @@ total_cost.append(adcs_tank.cost_until_launch(16)*1.2)
 computer = parts()
 computer.set_value(7500, 1)
 computer.transport_cost(20, by_truck_high=1214)
+cost_of_transport.append(computer.transport_cost(20, by_truck_high=1214))
 computer.testing()
+rd_cost.append(computer.testing())
+cost_of_parts.append(computer.set_value(7500, 1))
 total_cost.append(computer.cost_until_launch(1)*1.2)
     
     
@@ -120,34 +171,52 @@ total_cost.append(computer.cost_until_launch(1)*1.2)
 thermal_LDR = parts()
 thermal_LDR.part_cost(25*2200+5*13000, 1000000, 10000000/2, 15*1*75000)
 thermal_LDR.testing()
+rd_cost.append(thermal_LDR.testing())
+rd_cost.append(thermal_LDR.development_costs*2)
+cost_of_manufacturing.append(thermal_LDR.part_costs*2)
 total_cost.append(thermal_LDR.cost_until_launch(2)*1.2)
 #Thermal straps azimut space berlin
 thermal_straps = parts()
 thermal_straps.set_value(2000, 1)
 thermal_straps.transport_cost(50, by_truck_high=615.52)
+cost_of_transport.append(50*thermal_straps.transport_cost(50, by_truck_high=615.52))
 thermal_straps.testing()
+rd_cost.append(thermal_straps.testing())
+cost_of_parts.append(thermal_straps.set_value(2000, 1)*25)
 total_cost.append(thermal_straps.cost_until_launch(25)*1.2)
 #coating ATG Europe BV noordwijk
 thermal_coat = parts()
 thermal_coat.set_value(8000, 1)
 thermal_coat.transport_cost(4, by_truck_high=50.21)
+cost_of_transport.append(2*thermal_coat.transport_cost(4, by_truck_high=50.21))
 thermal_coat.testing()
+rd_cost.append(thermal_coat.testing())
+cost_of_parts.append(thermal_coat.set_value(8000, 1)*2)
 total_cost.append(thermal_coat.cost_until_launch(2)*1.2)
 #MLI in house 
 thermal_MLI = parts()
 thermal_MLI.part_cost(500*2200, 500*22, 100000, 15*3*52000)
 thermal_MLI.testing()
+rd_cost.append(thermal_MLI.testing())
+rd_cost.append(thermal_MLI.development_costs)
+cost_of_manufacturing.append(thermal_MLI.part_costs)
 total_cost.append(thermal_MLI.cost_until_launch(1)*1.2)
 #Louvres inhouse
 thermal_louvres = parts()
 thermal_louvres.part_cost(4*2000, 4*2000, 10000, 3*3*52000)
 thermal_louvres.testing()
+rd_cost.append(thermal_louvres.testing())
+rd_cost.append(thermal_louvres.development_costs)
+cost_of_manufacturing.append(thermal_louvres.part_costs)
 total_cost.append(thermal_louvres.cost_until_launch(1)*1.2)
 #heating element by RS components Netherlands
 thermal_heating = parts()
 thermal_heating.set_value(1000, 1)
 thermal_heating.transport_cost(mass=10, by_truck_high=30.06)
+cost_of_transport.append(56*thermal_heating.transport_cost(mass=10, by_truck_high=30.06))
 thermal_heating.testing()
+rd_cost.append(thermal_heating.testing())
+cost_of_parts.append(thermal_heating.set_value(1000, 1)*56)
 total_cost.append(thermal_heating.cost_until_launch(40+16)*1.2)
 
  
@@ -161,31 +230,169 @@ total_cost.append(thermal_heating.cost_until_launch(40+16)*1.2)
 transfer_fuel = parts()
 transfer_fuel.part_cost(10000000, 5000, 0, 52000)
 transfer_fuel.testing()
+rd_cost.append(transfer_fuel.testing())
+rd_cost.append(transfer_fuel.development_costs)
+cost_of_manufacturing.append(transfer_fuel.part_costs)
 total_cost.append(transfer_fuel.cost_until_launch(1)*1.2)
 
-#structures costs
+#structures & downlink costs
 #Trusses
-#mirrors
+#Queen - needs to be made twice in total
+#worker - needs to be made twice in total
+#stinger - needs to be made twice in total
+#relay - needs to be made twice in total
+
     
-
-#power downlink
-
 
 
 #cost of assembly 
-#robots
+#robots - Darpa Phoenix
+ass_robot = parts()
+ass_robot.set_value(64200000, 0)
+ass_robot.transport_cost(1500, by_truck_high=50.11, by_ship_medium=14900) #bringing from US to Airbus
+cost_of_transport.append(3*ass_robot.transport_cost(1500, by_truck_high=50.11, by_ship_medium=14900))
+ass_robot.testing(10)
+rd_cost.append(ass_robot.testing(10))
+cost_of_parts.append(ass_robot.set_value(64200000, 0)*3)
+total_cost.append(ass_robot.cost_until_launch(3)*1.2)
 
+#mechanisms and connections
+mechs = parts()
+mechs.part_cost(50000,5000 , 1000000/300, 52000)
+mechs.testing()
+rd_cost.append(mechs.testing())
+rd_cost.append(mechs.development_costs*300)
+cost_of_manufacturing.append(mechs.part_costs*300)
+total_cost.append(mechs.cost_until_launch(300)*1.2)
+
+
+#moving everything cost
+moving = parts()
+moving.set_value(0, 1)
+moving.transport_cost(40000000, by_truck_high=150.11, by_ship_large=7500)
+total_cost.append(moving.cost_until_launch(1)*1.2)
+cost_of_transport.append(moving.transport_cost(40000000, by_truck_high=150.11, by_ship_large=7500))
+
+#maintenance cost:
+#maintain parts missions
+timespan = 25*12
+mirr = 0.999
+sol = 0.9985
+mirrors_1 = [100, 100, 100, 100]
+sols_1 = [100, 100]
+def copy(lst1):
+    lst = []
+    for i in lst1:
+        lst.append(i)
+    return lst
+
+mainmissionmirrs = 0
+mainmissionsols = 0
+mirrors = copy(mirrors_1)
+sols = copy(sols_1)
+for month in range(0,timespan):
+    for i in range(0, len(mirrors)):
+        mirrors[i] = mirrors[i]*mirr
+        
+    for x in range(0, len(sols)):
+        sols[x] = sols[x]*sol
+        
+    outputmirrs = np.average(mirrors)
+    outputsols = np.average(sols)
+    if outputmirrs < 94:
+        for i in range(len(mirrors)):
+            if outputmirrs < 94:
+                a = min(mirrors)
+                b = mirrors.index(a)
+                mirrors[b] = mirrors_1[b]
+                mainmissionmirrs += 1
+                outputmirrs = np.average(mirrors)
+            else:
+                continue
     
+    if outputsols < 80:
+        for i in range(len(sols)):
+            if outputsols < 80:
+                a = min(sols)
+                b = sols.index(a)
+                sols[b] = sols_1[b]
+                mainmissionsols += 1
+                outputsols = np.average(sols)
+            else:
+                
+                continue
+    # print(month, mainmissionmirrs, mainmissionsols)    
     
+
+#operating costs:
+#salaries
+workers = 350
+average_energy_salary = 52000 #including bonusses ofc
+cost_salaries = workers*average_energy_salary*years
+total_cost.append(cost_salaries)
+#facility
+ground_station = parts()
+ground_station.part_cost(500000000, 0, 0, 0)
+ground_station.testing(0.5)
+total_cost.append(ground_station.cost_until_launch(1)*1.2)
+
+#The EOL cost is integrated into operating and fuel costs
+#launch costs:
+cost_per_lv = 30000000
+launches += mainmissionsols + mainmissionmirrs
+launch_cost = launches * cost_per_lv    
+total_cost.append(launch_cost)
+cost_of_launches.append(launch_cost)    
     
 
 
+
+total_cost = sum(rd_cost+cost_of_launches+cost_of_transport+cost_of_parts+[cost_salaries])
     
-    
-print(sum(total_cost)/100000)  
-    
-    
-    
-    
-    
-    
+print('=====================================')
+print('cost of development:            ' + str(sum(rd_cost)/1000000))
+print('cost of launches:               ' + str(sum(cost_of_launches)/1000000))
+print('cost of transport:              ' + str(sum(cost_of_transport)/1000000))   
+print('cost of purchases:              ' + str(sum(cost_of_parts)/1000000))   
+print('cost of GS:                     ' + str(ground_station.part_costs/1000000))
+print('cost of salaries & contractors: ' + str(cost_salaries/1000000))
+print('cost of manufacturing/Assembly: ' + str(sum(cost_of_manufacturing)/1000000))
+print('-------------------------------------')
+print('total costs:         ' + str(sum(cost_of_manufacturing+rd_cost+cost_of_launches+cost_of_transport+cost_of_parts+[ground_station.part_costs]+[cost_salaries])/1000000))
+
+
+
+# Data to plot
+plt.figure()
+labels = 'Development', 'Transport', 'Purchases', 'Manufacturing/Assembly'
+
+intertot = sum(cost_of_manufacturing+rd_cost+cost_of_transport+cost_of_parts)
+sizes = [chartify(sum(rd_cost),intertot), chartify(sum(cost_of_transport),intertot), chartify(sum(cost_of_parts),intertot), chartify(sum(cost_of_manufacturing),intertot)]
+colors = ['gold', 'yellowgreen', 'lightcoral', 'lightskyblue']
+explode = (0, 0, 0, 0)  # explode 1st slice
+
+# Plot
+plt.pie(sizes, explode=explode, labels=labels, colors=colors,
+autopct='%1.1f%%', shadow=False, startangle=140, )
+plt.title('Pie chart showing costs of the System')
+plt.axis('equal')
+plt.show()
+
+
+#Data to plot
+plt.figure()
+labels = 'launches', 'Groundstation Operations', 'System'
+
+sizes = [chartify(sum(cost_of_launches),total_cost), chartify(ground_station.part_costs+cost_salaries, total_cost),chartify(sum(cost_of_manufacturing+rd_cost+cost_of_transport+cost_of_parts),total_cost)]
+colors = ['yellowgreen', 'lightcoral', 'lightskyblue']
+explode = (0, 0, 0)  # explode 1st slice
+
+# Plot
+plt.pie(sizes, explode=explode, labels=labels, colors=colors,
+autopct='%1.1f%%', shadow=False, startangle=240, )
+plt.title('Pie chart showing relative costs to system')
+plt.axis('equal')
+plt.show()
+
+
+
