@@ -40,7 +40,7 @@ transport = 10
 cost_tran = cost_curve(-1, 0, 10.56)
 
 launches = 7860
-cost_laun = cost_curve(-4, 0, 7860)
+cost_laun = cost_curve(-4, 0, 6390)
 
 maintenance = 60
 cost_main = cost_curve(10, 15, 65)

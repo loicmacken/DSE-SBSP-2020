@@ -73,7 +73,7 @@ class parts:
         return print(f'{self.name} & {self.status} & {self.import_tax} & {self.total} & {self.units} \\\ ' )
     
 ####global_variables#####
-launches = 250
+launches = 201
 years = 25
 
     
@@ -363,7 +363,7 @@ mechs.__str__()
 #moving everything cost
 moving = parts('Module transport')
 moving.set_value(0, 1)
-moving.transport_cost(40000000, by_truck_high=150.11, by_ship_large=7500)
+moving.transport_cost(20200000, by_truck_high=150.11, by_ship_large=7500)
 total_cost.append(moving.cost_until_launch(1)*1.2)
 cost_of_transport.append(moving.transport_cost(40000000, by_truck_high=150.11, by_ship_large=7500))
 moving.__str__()
@@ -415,7 +415,7 @@ for month in range(0,timespan):
             else:
                 
                 continue
-    #print(month, mainmissionmirrs, mainmissionsols)    
+    print(month, mainmissionmirrs, mainmissionsols)    
    
 
 #operating costs:
