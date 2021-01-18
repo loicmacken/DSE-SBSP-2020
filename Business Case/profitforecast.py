@@ -40,7 +40,7 @@ transport = 10
 cost_tran = cost_curve(-1, 0, 10.56)
 
 launches = 7860
-cost_laun = cost_curve(-4, 0, 6390)
+cost_laun = cost_curve(-4, 0, 12480)
 
 maintenance = 60
 cost_main = cost_curve(10, 15, 65)
@@ -58,13 +58,15 @@ cost_sub2 = cost_curve(-6, 25, 1100)
 revenue = 4930
 cost_rev = cost_curve(0, 25, 4930)
 
+hyporev = 7909
+cost_hypo = cost_curve(-6,5,7950)
 
 
 #timeline
 time = np.arange(-6,25,1)
 
 new_cost = cost_jobs + cost_infra + cost_dev + cost_pur + cost_man + cost_tran + cost_laun + cost_main
-new_rev = cost_sub1 +cost_sub2 + cost_rev
+new_rev = cost_sub1 +cost_sub2 + cost_rev + cost_hypo
 
 timelycost = []
 for i in range(0,len(new_cost)):
@@ -93,6 +95,8 @@ plt.show()
 
 for i in timelycost:
     print(i/timelycost[-1])
+    
+print(timelycost[-1]-timelyrevs[-1])
 
 
 

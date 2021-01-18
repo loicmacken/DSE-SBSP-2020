@@ -73,9 +73,9 @@ class parts:
         return print(f'{self.name} & {self.status} & {self.import_tax} & {self.total} & {self.units} \\\ ' )
     
 ####global_variables#####
-launches = 201
+weight = 20200000
 years = 25
-
+launches = 440
     
 #Propulsionssss
 
@@ -265,7 +265,7 @@ rd_cost.append(Batteries.testing())
 cost_of_parts.append(Batteries.set_value(35000, 1)*25)
 total_cost.append(Batteries.cost_until_launch(2)*1.2)
 Batteries.__str__()
-#Power management system
+#Power management system 
 PDS = parts('Power Distribution System')
 PDS.set_value(10000, 0)
 PDS.transport_cost(50, by_truck_high=615.52)
@@ -338,7 +338,7 @@ relay.__str__()
 
 
 #cost of assembly 
-#robots - Darpa Phoenix
+#robots - ESA
 ass_robot = parts('Assembly robot')
 ass_robot.set_value(64200000, 0)
 ass_robot.transport_cost(1500, by_truck_high=50.11, by_ship_medium=14900) #bringing from US to Airbus
@@ -363,7 +363,7 @@ mechs.__str__()
 #moving everything cost
 moving = parts('Module transport')
 moving.set_value(0, 1)
-moving.transport_cost(20200000, by_truck_high=150.11, by_ship_large=7500)
+moving.transport_cost(20200000*1.2, by_truck_high=150.11, by_ship_large=7500)
 total_cost.append(moving.cost_until_launch(1)*1.2)
 cost_of_transport.append(moving.transport_cost(40000000, by_truck_high=150.11, by_ship_large=7500))
 moving.__str__()
@@ -415,7 +415,7 @@ for month in range(0,timespan):
             else:
                 
                 continue
-    print(month, mainmissionmirrs, mainmissionsols)    
+    # print(month, mainmissionmirrs, mainmissionsols)    
    
 
 #operating costs:
@@ -438,7 +438,8 @@ launches += mainmissionsols + mainmissionmirrs
 launch_cost = launches * cost_per_lv    
 total_cost.append(launch_cost)
 cost_of_launches.append(launch_cost)    
-    
+
+
 
 
 
@@ -468,7 +469,7 @@ explode = (0, 0, 0, 0)  # explode 1st slice
 
 # Plot
 plt.pie(sizes, explode=explode, labels=labels, colors=colors,
-autopct='%1.1f%%', shadow=False, startangle=140, )
+autopct='%1.1f%%', shadow=False, startangle=90, )
 plt.title('Pie chart showing costs of the System')
 plt.axis('equal')
 plt.show()
