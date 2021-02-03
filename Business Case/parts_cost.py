@@ -21,7 +21,7 @@ class parts:
     def set_value(self, value, EU):
         self.value = value
         self.EU = EU
-        self.status = 'Off-The-Shelve'
+        self.status = 'Off-The-Shelf'
         if EU == 0:
             self.value = value #add import taxes
             self.import_taxes = value*0.064
@@ -66,7 +66,7 @@ class parts:
         self.units = units
         trans = sum(self.transport)
         dev = sum(self.development)
-        self.total  = np.round((trans + dev + self.value), 2)
+        self.total  = np.round((trans + dev + self.value), -2)
         return self.total*units
         
     def __str__(self):
@@ -488,6 +488,7 @@ plt.pie(sizes, explode=explode, labels=labels, colors=colors,
 autopct='%1.1f%%', shadow=False, startangle=240, )
 plt.title('Pie chart showing relative costs to system')
 plt.axis('equal')
+plt.rc('font', size=22)
 plt.show()
 
 
